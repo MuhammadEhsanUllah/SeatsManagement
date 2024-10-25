@@ -62,7 +62,7 @@ const drawCanvas = (sectionsToDraw: ISection[]) => {
                     ctx.fill();
                     ctx.closePath();
                 });
-                
+
                 currentX += canvasWidth + gap;
             });
             sectionsToDraw = [];
@@ -71,52 +71,62 @@ const drawCanvas = (sectionsToDraw: ISection[]) => {
 };
 
 const saveVenue = async () => {
-
     saveVenueStore.selectedSections = selectedSections.value;
     console.log("fakhiooer", saveVenueStore.selectedSections);
     try {
         await saveVenueStore.saveVenue();
         selectedSections.value = [];
         saveVenueStore.venueName = '';
+        clearCanvas();
     } catch (error) {
         console.error('Failed to save venue:', error);
 
         alert('Failed to save venue. Please try again.');
     }
 };
+const clearCanvas = () => {
+    const canvas = mainCanvas.value;
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+};
 </script>
 
 <template>
     <div>
-        <button @click="openModal">Show All Sections</button>
+        <button class="btn btn-secondary my-3" @click="openModal">Show All Sections</button>
 
         <div v-if="isModalOpen" class="modal">
             <div class="modal-content">
                 <span class="close" @click="closeModal">&times;</span>
-                <h2>Select Sections</h2>
+                <h3>Select Sections</h3>
                 <div v-for="section in seatingStore.sections" :key="section.id">
-                    <input type="checkbox" :value="section" v-model="selectedSections" />
-                    <label>Section ID: {{ section.id }}</label>
+                    <input type="checkbox" :value="section" class="form-check-input me-2" v-model="selectedSections" />
+                    <label class="form-label">Section ID: {{ section.id }}</label>
                 </div>
-                <button @click="drawSelectedSections">OK</button>
+                <button @click="drawSelectedSections" class="btn btn-primary">OK</button>
             </div>
         </div>
 
-        <div>
-            <input type="text" v-model="saveVenueStore.venueName" placeholder="Enter Venue Name" required />
-            <button @click="saveVenue">Save Venue</button>
+        <div class="mb-3">
+            <label class="form-label">Venue Name</label>
+            <input type="text" v-model="saveVenueStore.venueName" placeholder="Enter Venue Name" class="form-control w-25" required />
         </div>
 
         <div class="canvas-container">
-            <canvas ref="mainCanvas" class="main-canvas" width="800" height="600"></canvas>
+            <canvas ref="mainCanvas" class="main-canvas" width="1000" height="400"></canvas>
+        </div>
+        <div class="mt-3">
+            <button @click="saveVenue" class="btn btn-success">Save Venue</button>
         </div>
     </div>
 </template>
 
 <style scoped>
 .canvas-container {
-    height: 600px;
-    width: 800px;
     overflow-y: auto;
     border: 2px solid black;
 }
@@ -140,10 +150,11 @@ const saveVenue = async () => {
 
 .modal-content {
     background-color: #fefefe;
-    margin: 15% auto;
+    margin: 5% auto;
     padding: 20px;
     border: 1px solid #888;
-    width: 80%;
+    width: 40%;
+    overflow-y: auto;
 }
 
 .close {

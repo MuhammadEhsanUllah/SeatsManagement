@@ -28,7 +28,7 @@ export const useGetAllSeatingStore = defineStore('seating', () => {
 
             if (response && Array.isArray(response.data)) {
                 sections.value = response.data; 
-                toastr.success('Sections loaded successfully!', 'Success');
+                // toastr.success('Sections loaded successfully!', 'Success');
             } else {
                 console.error('API response is not structured as expected:', response);
                 toastr.error('Failed to load sections!', 'Error');

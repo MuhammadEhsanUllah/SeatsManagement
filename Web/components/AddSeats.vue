@@ -5,20 +5,20 @@ import { useSeatingStore } from '../store/SeatsStore'
 const seatingStore = useSeatingStore();
 
 // Reactive properties
-const rows = ref<number>(0); // Track the number of rows
-const columns = ref<number>(0); // Track the number of columns
-let seats = reactive<ISeat[]>([]); // Store generated seats
-const originalSeats: { [key: number]: ISeat[] } = {}; // Store original seat data
-const rowPrices: { [key: number]: number } = {}; // Store prices for each row
-const rowCheckboxes: { [key: number]: boolean } = {}; // Checkboxes for rows
-const defaultPrice = ref<number>(100); // Default price
-const seatingChart = ref<HTMLCanvasElement | null>(null); // Reference to the canvas element
+const rows = ref<number>(0); 
+const columns = ref<number>(0);
+let seats = reactive<ISeat[]>([]); 
+const originalSeats: { [key: number]: ISeat[] } = {}; 
+const rowPrices: { [key: number]: number } = {}; 
+const rowCheckboxes: { [key: number]: boolean } = {}; 
+const defaultPrice = ref<number>(100); 
+const seatingChart = ref<HTMLCanvasElement | null>(null); 
 const selectAll = ref<boolean>(false);
 let selectedSeats = ref<ISeat[]>([]);
 // Function to generate seats
 const generateSeats = () => {
     const spacing = 45;
-    seats.length = 0; // Clear existing seats
+    seats.length = 0; 
 
     let secNumber = JSON.parse(localStorage.getItem("SectionsCount") || '0');
 
@@ -35,7 +35,7 @@ const generateSeats = () => {
                 id: `${secNumber}S${seats.length + 1}`,
                 row: r,
                 isSelected: false,
-                color: getColorByPrice(defaultPrice.value), // Make sure this function is defined
+                color: getColorByPrice(defaultPrice.value), 
                 isDeleted: false
             }
             seats.push(seat);
@@ -110,7 +110,7 @@ const renderSeats = () => {
             seats.filter(seat => !seat.isDeleted).forEach((seat) => {
                 ctx.beginPath();
                 ctx.arc(seat.x, seat.y, seat.radius, 0, Math.PI * 2);
-                ctx.fillStyle = seat.isSelected ? seat.color : seat.color; // Use seat's color
+                ctx.fillStyle = seat.isSelected ? seat.color : seat.color; 
                 ctx.fill();
                 ctx.closePath();
             });
@@ -223,7 +223,7 @@ onMounted(() => {
         </div>
     </div>
 
-    <canvas ref="seatingChart" width="800" height="500" class="border border-primary"></canvas>
+    <canvas ref="seatingChart" width="800" height="500" class="border border-dark"></canvas>
 
     <div class="mt-3">
         <input type="checkbox" class="form-check-input me-2" v-model="selectAll" @change="toggleAllSeats" />

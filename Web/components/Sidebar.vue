@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { useRoute } from 'vue-router';
 
+const route = useRoute();
 </script>
+
 <template>
     <div>
         <div class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark w-100 h100">
@@ -13,13 +16,19 @@
             <hr>
             <ul class="nav nav-pills flex-column mb-auto">
                 <li class="nav-item">
-                    <nuxt-link to="/AddSeats" class="nav-link active" aria-current="page">
-                        Add New Section
+                    <nuxt-link 
+                        to="/AddSeats" 
+                        :class="{'nav-link text-white': true, 'active text-white': route.path === '/AddSeats'}" 
+                        aria-current="page">
+                        Add Section
                     </nuxt-link>
                 </li>
                 <li>
-                    <nuxt-link to="/ShowAllSection" class="nav-link text-white">
-                        Show All Sections
+                    <nuxt-link 
+                        to="/AddVenue" 
+                        :class="{'nav-link text-white': true, 'active': route.path === '/AddVenue'}" 
+                        aria-current="page">
+                        Add Venue
                     </nuxt-link>
                 </li>
             </ul>
@@ -29,7 +38,7 @@
 </template>
 
 <style scoped>
- .h100{
-    height:100vh;
- }
+.h100 {
+    height: 100vh;
+}
 </style>

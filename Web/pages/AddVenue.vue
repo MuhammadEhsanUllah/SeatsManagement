@@ -6,7 +6,7 @@
                 <Sidebar />
             </div>
             <div class="col-10">
-                <ShowAllSections />
+                <AddVenue />
             </div>
         </div>
     </div>
