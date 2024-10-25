@@ -13,14 +13,14 @@
             <hr>
             <ul class="nav nav-pills flex-column mb-auto">
                 <li class="nav-item">
-                    <a href="#" class="nav-link active" aria-current="page">
+                    <nuxt-link to="/AddSeats" class="nav-link active" aria-current="page">
                         Add New Section
-                    </a>
+                    </nuxt-link>
                 </li>
                 <li>
-                    <a href="#" class="nav-link text-white">
+                    <nuxt-link to="/ShowAllSection" class="nav-link text-white">
                         Show All Sections
-                    </a>
+                    </nuxt-link>
                 </li>
             </ul>
             <hr>

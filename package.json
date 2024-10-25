@@ -12,13 +12,16 @@
   "dependencies": {
     "@pinia/nuxt": "^0.5.5",
     "@popperjs/core": "^2.11.8",
+    "axios": "^1.7.7",
     "bootstrap": "^5.3.3",
     "nuxt": "^3.13.2",
     "pinia": "^2.2.4",
+    "toastr": "^2.1.4",
     "vue": "latest",
     "vue-router": "latest"
   },
   "devDependencies": {
+    "@types/toastr": "^2.1.43",
     "sass": "^1.80.3"
   },
   "overrides": {

@@ -6,7 +6,7 @@
                 <Sidebar />
             </div>
             <div class="col-10">
-                <nuxt-child />
+                <ShowAllSections />
             </div>
         </div>
     </div>

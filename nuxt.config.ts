@@ -16,4 +16,9 @@ export default defineNuxtConfig({
       title: 'Seats Reservation',
     },
   },
+  runtimeConfig: {
+    public: {
+      API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:3000', // Fallback to a default URL
+    },
+  },
 })

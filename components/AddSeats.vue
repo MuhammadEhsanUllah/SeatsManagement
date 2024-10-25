@@ -1,20 +1,20 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { useCounterStore } from '~/store/counter';
 import type { ISeat } from '../interfaces/ISeat'
-const store = useCounterStore();
+import { useSeatingStore } from '../store/SeatsStore'
+const seatingStore = useSeatingStore();
 
 // Reactive properties
-const rows = ref<number>(0); // Track the number of rows
-const columns = ref<number>(0); // Track the number of columns
-let seats = reactive<ISeat[]>([]); // Store generated seats
-const originalSeats: { [key: number]: ISeat[] } = {}; // Store original seat data
-const rowPrices: { [key: number]: number } = {}; // Store prices for each row
-const rowCheckboxes: { [key: number]: boolean } = {}; // Checkboxes for rows
-const defaultPrice = ref<number>(100); // Default price
-const seatingChart = ref<HTMLCanvasElement | null>(null); // Reference to the canvas element
+const rows = ref<number>(0);
+const columns = ref<number>(0);
+let seats = reactive<ISeat[]>([]);
+const originalSeats: { [key: number]: ISeat[] } = {};
+const rowPrices: { [key: number]: number } = {};
+const rowCheckboxes: { [key: number]: boolean } = {};
+const defaultPrice = ref<number>(100);
+const seatingChart = ref<HTMLCanvasElement | null>(null);
 const selectAll = ref<boolean>(false);
-
+let selectedSeats = ref<ISeat[]>([]);
 // Function to generate seats
 const generateSeats = () => {
     const spacing = 45;
@@ -35,7 +35,7 @@ const generateSeats = () => {
                 id: `${secNumber}S${seats.length + 1}`,
                 row: r,
                 isSelected: false,
-                color: getColorByPrice(defaultPrice.value), // Make sure this function is defined
+                color: getColorByPrice(defaultPrice.value),
                 isDeleted: false
             }
             seats.push(seat);
@@ -74,24 +74,32 @@ const handleSeatClick = (seat: ISeat) => {
     // }
     renderSeats();
 };
+const deleteSeat = () => {
 
+    seats = seats.filter(seat => !seat.isSelected);
+
+    selectedSeats.value = [];
+
+    renderSeats();
+
+};
 const registerClickHandler = () => {
-      const canvas = seatingChart.value;
-      if (canvas) {
+    const canvas = seatingChart.value;
+    if (canvas) {
         canvas.addEventListener('click', (event) => {
-          const rect = canvas.getBoundingClientRect();
-          const x = event.clientX - rect.left;
-          const y = event.clientY - rect.top;
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
 
-          seats.forEach((seat) => {
-            const dist = Math.sqrt((x - seat.x) ** 2 + (y - seat.y) ** 2);
-            if (dist < seat.radius) {
-              handleSeatClick(seat);
-            }
-          });
+            seats.forEach((seat) => {
+                const dist = Math.sqrt((x - seat.x) ** 2 + (y - seat.y) ** 2);
+                if (dist < seat.radius) {
+                    handleSeatClick(seat);
+                }
+            });
         });
-      }
-    };
+    }
+};
 
 const renderSeats = () => {
     const canvas = seatingChart.value;
@@ -110,46 +118,81 @@ const renderSeats = () => {
     }
 };
 
-// Function to get color by price (you need to implement this)
 const getColorByPrice = (price: number): string => {
     switch (price) {
-        case 100: return '#008000'; // Example color for price 100
-        case 150: return '	#0000FF'; // Example color for price 150
-        case 200: return '#808080'; // Example color for price 200
-        default: return '#008000'; // Default color
+        case 100: return '#008000';
+        case 150: return '	#0000FF';
+        case 200: return '#808080';
+        default: return '#008000';
     }
 };
 
 const toggleAllSeats = () => {
-      const newState = selectAll.value;
-      for (const row in rowCheckboxes) {
+    const newState = selectAll.value;
+    for (const row in rowCheckboxes) {
         rowCheckboxes[row] = newState;
-      }
-      seats.forEach((seat) => {
+    }
+    seats.forEach((seat) => {
         seat.isSelected = selectAll.value;
         if (selectAll.value) {
-          seat.color = "red";
+            seat.color = "red";
 
         } else {
-          seat.color = getColorByPrice(seat.price);
+            seat.color = getColorByPrice(seat.price);
         }
-      });
+    });
     //   updateSelectedSeats();
-      renderSeats();
-    };
+    renderSeats();
+};
 
 const clearSeats = () => {
-      seats.length = 0;
-      for (const row in rowCheckboxes) {
+    seats.length = 0;
+    for (const row in rowCheckboxes) {
         rowCheckboxes[row] = false;
-      }
+    }
 
-      selectAll.value = false;
-      renderSeats();
+    selectAll.value = false;
+    renderSeats();
     //   selectedSeats.value.length = 0;
-    };
+};
 
-onMounted(()=>{
+const saveSelection = async () => {
+    if (rows.value === undefined || columns.value === undefined || seats === undefined) {
+        console.error('Rows, columns, seats, or canvas data are not defined');
+        return;
+    }
+
+    // Prepare the new canvas data
+    const newCanvas = {
+        width: (columns.value * 42) + 40,
+        height: (rows.value * 43) + 30,
+        x: 50, // Default x position (can be updated in the store)
+        y: 50  // Default y position (can be updated in the store)
+    };
+    
+    // Pass the relevant data to the store
+    seatingStore.rowsCount = rows.value;
+    seatingStore.columnsCount = columns.value;
+    seatingStore.seats = seats;
+
+    try {
+        // Calculate updated positions and save everything
+        await seatingStore.saveSeats(newCanvas);
+        console.log('Seats and canvas saved successfully.');
+
+        // Clear seats after saving
+        clearSeats();
+
+        // Reset rows and columns to zero
+        rows.value = 0;
+        columns.value = 0;
+    } catch (error) {
+        console.error('Failed to save seats and canvas:', error);
+    }
+};
+
+
+onMounted(() => {
     registerClickHandler();
 })
 </script>
@@ -197,11 +240,13 @@ onMounted(()=>{
     <canvas ref="seatingChart" width="800" height="500" class="border border-primary"></canvas>
 
     <div class="mt-3">
-        <input type="checkbox" class="form-check-input me-2" v-model="selectAll"  @change="toggleAllSeats" />
+        <input type="checkbox" class="form-check-input me-2" v-model="selectAll" @change="toggleAllSeats" />
         <label class="form-label">Select All Seats</label>
     </div>
     <div class="mt-3">
-        <button type="button" class="btn btn-success">Save Selection</button>
-        <button type="button" @click="clearSeats" class="btn btn-danger ms-4">Clear All Seats</button>
+        <button type="button" @click="saveSelection" class="btn btn-success">Save Selection</button>
+        <button type="button" @click="clearSeats" class="btn btn-warning ms-4">Clear All Seats</button>
+        <button type="button" @click="deleteSeat" class="btn btn-danger ms-4">Delete Selected Seats</button>
     </div>
 </template>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
