@@ -1,80 +1,162 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
 import { useGetAllSeatingStore } from '../store/GetAllSectionsStore';
+import { useSaveVenueStore } from '../store/SaveVenueStore';
+import type { ISection } from '~/interfaces/ISection';
+import type { ISeat } from '~/interfaces/ISeat';
 
 const seatingStore = useGetAllSeatingStore();
+const saveVenueStore = useSaveVenueStore();
 const mainCanvas = ref<HTMLCanvasElement | null>(null);
-const scaleFactor = 1;
+const isModalOpen = ref(false);
+const selectedSections = ref<ISection[]>([]);
 
 onMounted(async () => {
-    
     await seatingStore.getSections();
-    if (Array.isArray(seatingStore.sections)) {
-        drawCanvas(scaleFactor);
-    }
 });
 
-const drawCanvas = (scaleFactor: number) => {
+const openModal = () => {
+    isModalOpen.value = true;
+};
+
+const closeModal = () => {
+    isModalOpen.value = false;
+};
+
+const drawSelectedSections = () => {
+    closeModal();
+    drawCanvas(selectedSections.value);
+};
+
+const drawCanvas = (sectionsToDraw: ISection[]) => {
     const canvas = mainCanvas.value;
     if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.save();
-            ctx.scale(scaleFactor, scaleFactor);
+            const gap = 20;
+            let currentY = 50;
+            let currentX = 20;
+            const maxWidth = 800;
 
-            // Check if sections is an array before iterating
-            if (Array.isArray(seatingStore.sections)) {
-                seatingStore.sections.forEach((section, sectionIndex) => {
-                    const sectionProps = {
-                        width: 200,
-                        height: 100,
-                        x: sectionIndex * 220,
-                        y: 50,
-                    };
+            sectionsToDraw.forEach((section) => {
 
-                    ctx.fillStyle = 'lightblue';
-                    ctx.fillRect(sectionProps.x, sectionProps.y, sectionProps.width, sectionProps.height);
-                    ctx.strokeStyle = 'black';
-                    ctx.strokeRect(sectionProps.x, sectionProps.y, sectionProps.width, sectionProps.height);
+                const maxX = Math.max(...section.seats.map(seat => seat.x));
+                const canvasWidth = maxX + 2 * section.seats[0].radius + 20;
+                const sectionHeight = Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20;
 
-                    section.seats.forEach(seat => {
-                        ctx.beginPath();
-                        ctx.arc(sectionProps.x + seat.x, sectionProps.y + seat.y, seat.radius, 0, Math.PI * 2);
-                        ctx.fillStyle = seat.color;
-                        ctx.fill();
-                        ctx.closePath();
-                    });
+                if (currentX + canvasWidth > maxWidth) {
+                    currentX = 20;
+                    currentY += sectionHeight + gap;
+                }
+
+                ctx.fillStyle = 'lightblue';
+                ctx.fillRect(currentX, currentY, canvasWidth, sectionHeight);
+                ctx.strokeStyle = 'black';
+                ctx.strokeRect(currentX, currentY, canvasWidth, sectionHeight);
+
+                section.seats.forEach((seat: ISeat) => {
+                    ctx.beginPath();
+                    ctx.arc(currentX + seat.x, currentY + seat.y, seat.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = seat.color;
+                    ctx.fill();
+                    ctx.closePath();
                 });
-            }
-
-            ctx.restore();
+                
+                currentX += canvasWidth + gap;
+            });
+            sectionsToDraw = [];
         }
+    }
+};
+
+const saveVenue = async () => {
+
+    saveVenueStore.selectedSections = selectedSections.value;
+    console.log("fakhiooer", saveVenueStore.selectedSections);
+    try {
+        await saveVenueStore.saveVenue();
+        selectedSections.value = [];
+        saveVenueStore.venueName = '';
+    } catch (error) {
+        console.error('Failed to save venue:', error);
+
+        alert('Failed to save venue. Please try again.');
     }
 };
 </script>
 
 <template>
     <div>
-        <canvas ref="mainCanvas" class="main-canvas" :width="800" :height="600"></canvas>
-        <div v-if="Array.isArray(seatingStore.sections) && seatingStore.sections.length > 0">
-            <h2>Sections List</h2>
-            <ul>
-                <li v-for="section in seatingStore.sections" :key="section.id">
-                    <strong>Section ID:</strong> {{ section.id }} | 
-                    <strong>Seats Count:</strong> {{ section.seats.length }} | 
-                    <strong>Price:</strong> {{ section.seats[0]?.price }}
-                </li>
-            </ul>
+        <button @click="openModal">Show All Sections</button>
+
+        <div v-if="isModalOpen" class="modal">
+            <div class="modal-content">
+                <span class="close" @click="closeModal">&times;</span>
+                <h2>Select Sections</h2>
+                <div v-for="section in seatingStore.sections" :key="section.id">
+                    <input type="checkbox" :value="section" v-model="selectedSections" />
+                    <label>Section ID: {{ section.id }}</label>
+                </div>
+                <button @click="drawSelectedSections">OK</button>
+            </div>
         </div>
-        <div v-else>
-            <p>No sections available.</p>
+
+        <div>
+            <input type="text" v-model="saveVenueStore.venueName" placeholder="Enter Venue Name" required />
+            <button @click="saveVenue">Save Venue</button>
+        </div>
+
+        <div class="canvas-container">
+            <canvas ref="mainCanvas" class="main-canvas" width="800" height="600"></canvas>
         </div>
     </div>
 </template>
 
 <style scoped>
-.main-canvas {
+.canvas-container {
+    height: 600px;
+    width: 800px;
+    overflow-y: auto;
     border: 2px solid black;
+}
+
+.main-canvas {
+    display: block;
+    height: auto;
+}
+
+.modal {
+    display: block;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
 }
 </style>

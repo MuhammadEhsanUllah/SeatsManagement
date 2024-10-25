@@ -5,14 +5,14 @@ import { useSeatingStore } from '../store/SeatsStore'
 const seatingStore = useSeatingStore();
 
 // Reactive properties
-const rows = ref<number>(0);
-const columns = ref<number>(0);
-let seats = reactive<ISeat[]>([]);
-const originalSeats: { [key: number]: ISeat[] } = {};
-const rowPrices: { [key: number]: number } = {};
-const rowCheckboxes: { [key: number]: boolean } = {};
-const defaultPrice = ref<number>(100);
-const seatingChart = ref<HTMLCanvasElement | null>(null);
+const rows = ref<number>(0); // Track the number of rows
+const columns = ref<number>(0); // Track the number of columns
+let seats = reactive<ISeat[]>([]); // Store generated seats
+const originalSeats: { [key: number]: ISeat[] } = {}; // Store original seat data
+const rowPrices: { [key: number]: number } = {}; // Store prices for each row
+const rowCheckboxes: { [key: number]: boolean } = {}; // Checkboxes for rows
+const defaultPrice = ref<number>(100); // Default price
+const seatingChart = ref<HTMLCanvasElement | null>(null); // Reference to the canvas element
 const selectAll = ref<boolean>(false);
 let selectedSeats = ref<ISeat[]>([]);
 // Function to generate seats
@@ -35,7 +35,7 @@ const generateSeats = () => {
                 id: `${secNumber}S${seats.length + 1}`,
                 row: r,
                 isSelected: false,
-                color: getColorByPrice(defaultPrice.value),
+                color: getColorByPrice(defaultPrice.value), // Make sure this function is defined
                 isDeleted: false
             }
             seats.push(seat);
@@ -157,40 +157,26 @@ const clearSeats = () => {
 };
 
 const saveSelection = async () => {
+
     if (rows.value === undefined || columns.value === undefined || seats === undefined) {
-        console.error('Rows, columns, seats, or canvas data are not defined');
+        console.error('Rows, columns, or seats are not defined');
         return;
     }
 
-    // Prepare the new canvas data
-    const newCanvas = {
-        width: (columns.value * 42) + 40,
-        height: (rows.value * 43) + 30,
-        x: 50, // Default x position (can be updated in the store)
-        y: 50  // Default y position (can be updated in the store)
-    };
-    
-    // Pass the relevant data to the store
     seatingStore.rowsCount = rows.value;
     seatingStore.columnsCount = columns.value;
     seatingStore.seats = seats;
 
     try {
-        // Calculate updated positions and save everything
-        await seatingStore.saveSeats(newCanvas);
-        console.log('Seats and canvas saved successfully.');
-
-        // Clear seats after saving
+        const result = await seatingStore.saveSeats();
+        console.log('Seats saved successfully:', result);
         clearSeats();
-
-        // Reset rows and columns to zero
         rows.value = 0;
         columns.value = 0;
     } catch (error) {
-        console.error('Failed to save seats and canvas:', error);
+        console.error('Failed to save seats:', error);
     }
 };
-
 
 onMounted(() => {
     registerClickHandler();

@@ -10,12 +10,11 @@ export const useGetAllSeatingStore = defineStore('seating', () => {
     const sections = ref<ISection[]>([]);
     const { public: { API_BASE_URL } } = useRuntimeConfig();
 
-    // Define the expected structure of the response
     interface ApiResponse {
         message: string;
         status: boolean;
         errors: any;
-        data: ISection[]; // This should match the type of data returned in `data`
+        data: ISection[]; 
     }
 
     const getSections = async (): Promise<void> => {
@@ -27,9 +26,8 @@ export const useGetAllSeatingStore = defineStore('seating', () => {
                 },
             });
 
-            // Check if response.data is an array
             if (response && Array.isArray(response.data)) {
-                sections.value = response.data; // Assign the array from the `data` property
+                sections.value = response.data; 
                 toastr.success('Sections loaded successfully!', 'Success');
             } else {
                 console.error('API response is not structured as expected:', response);
