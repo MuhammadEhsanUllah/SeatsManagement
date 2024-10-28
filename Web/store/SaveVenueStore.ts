@@ -20,7 +20,7 @@ export const useSaveVenueStore = defineStore('saveVenue', () => {
         console.log("Payload", payload);
 
         try {
-            const response = await $api<any>(`${API_BASE_URL}/api/Venue/venue`, {
+            const response = await $api<any>(`${API_BASE_URL}/api/admin/Venue/venue`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

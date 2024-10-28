@@ -28,7 +28,7 @@ export const useSeatingStore = defineStore('seating', () => {
         console.log("Payload", payload); 
         
         try {
-            const response = await $api<any>(`${API_BASE_URL}/api/Section/section`, {
+            const response = await $api<any>(`${API_BASE_URL}/api/admin/Section/section`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
