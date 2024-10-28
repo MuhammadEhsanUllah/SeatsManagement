@@ -22,6 +22,7 @@ namespace SeatBookingApi.Services
                 .Where(v => v.IsDeleted != true)
                 .Select(v => new GetVenue_DTO
                 {
+                    Id = v.Id,
                     Name = v.Name,
                     Sections = v.VenueSections
                         .Where(vs => vs.Section.IsDeleted != true)
@@ -126,7 +127,7 @@ namespace SeatBookingApi.Services
                 {
                     return ResponseModel.ErrorResponse("Venue not found.");
                 }
-
+                venue.Name = model.Name;
                 var existingSectionIds = venue.VenueSections
                     .Where(vs => vs.IsDeleted != true)
                     .Select(vs => vs.SectionId)

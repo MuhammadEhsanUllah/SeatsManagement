@@ -17,12 +17,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAnyOrigin",
-        builder => builder.AllowAnyOrigin()
+    options.AddPolicy("AllowSpecificOrigin",
+        builder => builder.WithOrigins("http://localhost:3000")
+                          // specify allowed origins
                           .AllowAnyMethod()
                           .AllowAnyHeader());
 });
-
 builder.Services.AddScoped<ISectionService, SectionService>();
 builder.Services.AddScoped<IVenueService, VenueService>();
 builder.Services.AddScoped<ICanvasService, CanvasService>();
@@ -35,7 +35,7 @@ var app = builder.Build();
     app.UseSwagger();
     app.UseSwaggerUI();
 //}
-app.UseCors("AllowAnyOrigin");
+app.UseCors("AllowSpecificOrigin");
 
 app.UseHttpsRedirection();
 

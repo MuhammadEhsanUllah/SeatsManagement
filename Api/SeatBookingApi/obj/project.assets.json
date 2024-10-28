@@ -2444,11 +2444,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Development\\ASP\\SeatBookingApi\\SeatBookingApi\\SeatBookingApi.csproj",
+      "projectUniqueName": "D:\\Development\\Nuxt\\SeatsManagement\\Api\\SeatBookingApi\\SeatBookingApi.csproj",
       "projectName": "SeatBookingApi",
-      "projectPath": "D:\\Development\\ASP\\SeatBookingApi\\SeatBookingApi\\SeatBookingApi.csproj",
+      "projectPath": "D:\\Development\\Nuxt\\SeatsManagement\\Api\\SeatBookingApi\\SeatBookingApi.csproj",
       "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
-      "outputPath": "D:\\Development\\ASP\\SeatBookingApi\\SeatBookingApi\\obj\\",
+      "outputPath": "D:\\Development\\Nuxt\\SeatsManagement\\Api\\SeatBookingApi\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
