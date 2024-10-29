@@ -6,7 +6,7 @@ namespace SeatBookingApi.Domain
     {
         [Key]
         public int Id { get; set; }
-        public int SectionNumber { get; set; }
+        public string Name { get; set; }
         public int RowsCount { get; set; }
         public int ColumnsCount { get; set; }
         // Navigation property

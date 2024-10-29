@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SeatBookingApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bab4889f2c0d93a0561739de3b1d2315377c2175")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d842a035bf3a8ce3e6c7b70f28ff927cc6d648cd")]
 [assembly: System.Reflection.AssemblyProductAttribute("SeatBookingApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SeatBookingApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

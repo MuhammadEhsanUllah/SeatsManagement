@@ -29,7 +29,8 @@ namespace SeatBookingApi.Services
                         .Select(vs => new GetSection_DTO
                         {
                             Id = vs.Section.Id,
-                            SectionNumber = vs.Section.SectionNumber,
+                            //SectionNumber = vs.Section.SectionNumber,
+                            Name = vs.Section.Name,
                             RowsCount = vs.Section.RowsCount,
                             ColumnsCount = vs.Section.ColumnsCount,
                             Seats = vs.Section.Seats
@@ -125,7 +126,7 @@ namespace SeatBookingApi.Services
 
                 if (venue == null)
                 {
-                    return ResponseModel.ErrorResponse("Venue not found.");
+                    return ResponseModel.ErrorResponse("Not Found.");
                 }
                 venue.Name = model.Name;
                 var existingSectionIds = venue.VenueSections
