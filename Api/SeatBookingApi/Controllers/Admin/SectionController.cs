@@ -65,5 +65,17 @@ namespace SeatBookingApi.Controllers
 
             return response;
         }
+        /// <summary>
+        /// restore seats of specific section
+        /// </summary>
+        /// <returns>restore seats</returns>
+        [HttpPost("{sectionId}/restore")]
+        public async Task<ResponseModel> RestoreSectionSeats(int sectionId)
+        {
+            var response = new ResponseModel();
+            response = await _sectionService.RestoreSectionSeats(sectionId);
+
+            return response;
+        }
     }
 }

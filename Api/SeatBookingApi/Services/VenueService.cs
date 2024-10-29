@@ -85,7 +85,7 @@ namespace SeatBookingApi.Services
 
                 await _context.SaveChangesAsync();
 
-                return ResponseModel.SuccessResponse(venue, "Venue added successfully");
+                return ResponseModel.SuccessResponse("Venue added successfully");
             }
             catch (Exception ex)
             {

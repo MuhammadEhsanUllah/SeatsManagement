@@ -6,6 +6,6 @@
         public string Name { get; set; }
         public int RowsCount { get; set; }
         public int ColumnsCount { get; set; }
-        public List<UpdateSeat_DTO> Seats { get; set; }
+        public List<int> SeatsIds { get; set; }
     }
 }

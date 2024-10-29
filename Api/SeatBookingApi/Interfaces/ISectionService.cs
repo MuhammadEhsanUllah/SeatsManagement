@@ -9,5 +9,6 @@ namespace SeatBookingApi.Interfaces
         Task<ResponseModel> AddSection(AddSection_DTO model);
         Task<ResponseModel> DeleteSections(int[] idsToDelete);
         Task<ResponseModel> UpdateSection(UpdateSection_DTO model);
+        Task<ResponseModel> RestoreSectionSeats(int sectionId);
     }
 }

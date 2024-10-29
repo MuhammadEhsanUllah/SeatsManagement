@@ -107,13 +107,17 @@ namespace SeatBookingApi.Services
         }
         public async Task<ResponseModel> UpdateSection(UpdateSection_DTO model)
         {
+            if (model == null)
+            {
+                return ResponseModel.ErrorResponse("Invalid data provided.");
+            }
+
             try
             {
-                // Fetch section along with seats from database
                 var section = await _context.Sections
-                    .Where(s => s.IsDeleted != true)
+                    .Where(s => !s.IsDeleted && s.Id == model.Id)
                     .Include(s => s.Seats)
-                    .FirstOrDefaultAsync(s => s.Id == model.Id);
+                    .FirstOrDefaultAsync();
 
                 if (section == null)
                 {
@@ -127,55 +131,23 @@ namespace SeatBookingApi.Services
                 section.DateUpdated = DateTime.Now;
 
                 var existingSeatIds = section.Seats
-                    .Where(seat => seat.IsDeleted != true)
+                    .Where(seat => !seat.IsDeleted)
                     .Select(seat => seat.Id)
-                    .ToList();
+                    .ToHashSet();
 
-                var modelSeatIds = model.Seats.Select(seat => seat.Id).ToList();
-
-                var seatsToAdd = model.Seats.Where(seat => seat.Id == 0).ToList(); // New seats
-                var seatsToUpdate = model.Seats.Where(seat => existingSeatIds.Contains(seat.Id)).ToList(); // Existing seats to update
-                var seatsToDelete = section.Seats
-                    .Where(seat => !modelSeatIds.Contains(seat.Id) && seat.IsDeleted != true)
-                    .ToList();
-
-                // Add new seats
-                foreach (var seat in seatsToAdd)
+                var seatsToDelete = existingSeatIds.Except(model.SeatsIds).ToList();
+                foreach (var id in seatsToDelete)
                 {
-                    section.Seats.Add(new Seat
+                    var seat = section.Seats.FirstOrDefault(x => x.Id == id);
+                    if (seat != null)
                     {
-                        X = seat.X,
-                        Y = seat.Y,
-                        Radius = seat.Radius,
-                        Price = seat.Price,
-                        Color = seat.Color,
-                        CreatedDate = DateTime.Now,
-                        IsDeleted = false
-                    });
-                }
-
-                // Update existing seats
-                foreach (var seat in seatsToUpdate)
-                {
-                    var existingSeat = section.Seats.FirstOrDefault(s => s.Id == seat.Id);
-                    if (existingSeat != null)
-                    {
-                        existingSeat.X = seat.X;
-                        existingSeat.Y = seat.Y;
-                        existingSeat.Radius = seat.Radius;
-                        existingSeat.Price = seat.Price;
-                        existingSeat.Color = seat.Color;
-                        existingSeat.DateUpdated = DateTime.Now;
+                        seat.IsDeleted = true;
                     }
                 }
 
-                foreach (var seat in seatsToDelete)
-                {
-                    seat.IsDeleted = true;
-                    seat.DateUpdated = DateTime.Now;
-                }
-
+                _context.Sections.Update(section);
                 await _context.SaveChangesAsync();
+
                 return ResponseModel.SuccessResponse("Section updated successfully");
             }
             catch (Exception ex)
@@ -183,6 +155,28 @@ namespace SeatBookingApi.Services
                 return ResponseModel.ErrorResponse(ex.Message);
             }
         }
+        public async Task<ResponseModel> RestoreSectionSeats(int sectionId)
+        {
+            try
+            {
+                var seats = await _context.Seats
+                    .Where(x => x.IsDeleted == true && x.SectionId == sectionId).ToListAsync();
+                foreach (var seat in seats)
+                {
+                    seat.IsDeleted = false;
+                    seat.DateUpdated = DateTime.Now;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return ResponseModel.SuccessResponse("Seats restored successfully");
+            }
+            catch (Exception ex)
+            {
+                return ResponseModel.ErrorResponse(ex.Message);
+            }
+        }
+
 
     }
 }
