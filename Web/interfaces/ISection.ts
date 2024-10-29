@@ -1,8 +1,9 @@
-// interfaces/ISection.ts
+
 import type { ISeat } from './ISeat';
 
 export interface ISection {
-    id: string;        
+    id: number; 
+    name:string;       
     rowsCount: number; 
     columnsCount: number;  
     seats: ISeat[];          

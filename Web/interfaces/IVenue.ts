@@ -1,7 +1,7 @@
 import type { ISeat } from "./ISeat";
 
 export interface IVenue {
-    id: string;
+    id: number;
     sectionNumber: number;
     rowsCount: number;
     columnsCount: number;
@@ -9,13 +9,13 @@ export interface IVenue {
 }
 
 export interface IVenueSection {
-    id:string;
+    id:number;
     name: string;
     sections: IVenue[];
 }
 
 export interface IUpdateVenue {
-    id:string;
+    id:number;
     name: string;
     sectionIds: number[];
 }

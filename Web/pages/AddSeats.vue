@@ -5,9 +5,16 @@
             <div class="col-2">
                 <Sidebar />
             </div>
-            <div class="col-10">
+            <div class="col-10 main-content">
                 <AddSeats />
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+   .main-content {
+    height: 100vh;
+    overflow-y: scroll;
+   }
+</style>

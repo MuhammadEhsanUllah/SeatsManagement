@@ -1,10 +1,12 @@
 <template>
   <div>
-    <div v-for="venue in venues" :key="venue.id" class="venue-container" :data-id="venue.id">
-      <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"></canvas>
-      <div class="actions">
-        <button @click="openEditModal(venue)">Edit</button>
-        <button @click="deleteVenue(venue.id)">Delete</button>
+    <div class="scrollable-canvas-container">
+      <div v-for="venue in venues" :key="venue.id" class="venue-container" :data-id="venue.id">
+        <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"></canvas>
+        <div class="actions">
+          <button @click="openEditModal(venue)">Edit</button>
+          <button @click="openConfirmationModal(venue.id)">Delete</button>
+        </div>
       </div>
     </div>
 
@@ -19,20 +21,32 @@
 
         <h4>Sections</h4>
         <div v-for="section in allSections" :key="section.id">
-            <input
-              type="checkbox"
-              class="form-check-input"
-              :value="section.id"
-              v-model="selectedSections"
-            />
-            <label class="form-label ms-2">
-                Section ID
-            </label>
+          <input
+            type="checkbox"
+            class="form-check-input"
+            :value="section.id"
+            v-model="selectedSections"
+          />
+          <label class="form-label ms-2">
+            {{ section.name }}
+          </label>
         </div>
 
         <div class="modal-actions">
           <button @click="saveChanges" class="btn btn-success">Save</button>
           <button @click="closeModal" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div v-if="showConfirmationModal" class="modal-overlay" @click.self="closeConfirmationModal">
+      <div class="modal-content">
+        <h3>Confirm Deletion</h3>
+        <p>Are you sure you want to delete this venue?</p>
+        <div class="modal-actions">
+          <button @click="deleteVenue(venueToDelete)" class="btn btn-danger">Delete</button>
+          <button @click="closeConfirmationModal" class="btn btn-secondary">Cancel</button>
         </div>
       </div>
     </div>
@@ -42,7 +56,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, nextTick } from 'vue';
 import { useGetAllVenuesStore } from '../store/GetAllVenuesStore';
-import { useGetAllSeatingStore } from '../store/GetAllSectionsStore';
+import { useGetAllSeatingStore } from '../store/GetAllSeatingStore';
 import type { IVenueSection } from '~/interfaces/IVenue';
 import type { ISection } from '~/interfaces/ISection';
 
@@ -51,8 +65,10 @@ const sectionStore = useGetAllSeatingStore();
 const venues = ref<IVenueSection[]>([]);
 const allSections = ref<ISection[]>([]);
 const showModal = ref(false);
-const editableVenue = ref<IVenueSection>({ id: '', name: '', sections: [] });
-const selectedSections = ref<string[]>([]);
+const showConfirmationModal = ref(false);
+const editableVenue = ref<IVenueSection>({ id: 0, name: '', sections: [] });
+const selectedSections = ref<number[]>([]);
+const venueToDelete = ref<number | null>(null);
 
 onMounted(async () => {
   await seatingStore.getVenues();
@@ -75,39 +91,54 @@ const closeModal = () => {
   showModal.value = false;
 };
 
+const openConfirmationModal = (venueId: number) => {
+  venueToDelete.value = venueId;
+  showConfirmationModal.value = true;
+};
+
+const closeConfirmationModal = () => {
+  showConfirmationModal.value = false;
+  venueToDelete.value = null;
+};
+
 const saveChanges = async () => {
-  // Create the updated venue object based on the current editable venue
   const updatedVenue = {
     ...editableVenue.value,
     sectionIds: allSections.value
       .filter(section => selectedSections.value.includes(section.id))
-      .map(section => section.id), // Extract only the IDs of selected sections
+      .map(section => section.id),
   };
-  console.log("lhfcaiohvcoiuaho",updatedVenue);
+
   try {
-    // Call the updateVenue function from the store with the updated venue
-    await seatingStore.updateVenue(editableVenue.value.id, updatedVenue); // Ensure you pass the correct ID
-    showModal.value = false; // Close the modal after saving changes
+    await seatingStore.updateVenue(updatedVenue);
+
+    const index = venues.value.findIndex(venue => venue.id === updatedVenue.id);
+    if (index !== -1) {
+      venues.value[index] = { ...venues.value[index], ...updatedVenue };
+    }
+
+    showModal.value = false;
+    drawVenues();
   } catch (error) {
     console.error('Error saving changes:', error);
-    // Optionally show an error notification
     toastr.error('Failed to save changes!', 'Error');
   }
 };
 
-const deleteVenue = async (venueId: string) => {
+const deleteVenue = async (venueId: number) => {
   try {
-    // Call the deleteVenue function from the store
-    await seatingStore.deleteVenue(venueId); // Ensure you pass the correct ID
-    // Optionally show a success notification
-    toastr.success('Venue deleted successfully!', 'Success');
+    await seatingStore.deleteVenue(venueId);
+    
+    venues.value = venues.value.filter(venue => venue.id !== venueId);
+    
+    showConfirmationModal.value = false;
+    venueToDelete.value = null;
+    
+    drawVenues();
   } catch (error) {
     console.error('Error deleting venue:', error);
-    // Optionally show an error notification
-    toastr.error('Failed to delete venue!', 'Error');
   }
 };
-
 
 const drawVenues = () => {
   venues.value.forEach((venue) => {
@@ -115,7 +146,6 @@ const drawVenues = () => {
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'black';
         ctx.font = '24px Arial';
@@ -172,7 +202,11 @@ const drawVenues = () => {
   border: 2px solid black;
   position: relative;
 }
-
+.scrollable-canvas-container {
+  max-height: 600px;
+  overflow-y: auto; 
+  overflow-x: hidden; 
+}
 .actions {
   display: flex;
   gap: 10px;

@@ -32,7 +32,7 @@ export const useGetAllVenuesStore = defineStore('getallvenues', () => {
         }
     };
 
-    const updateVenue = async (venueId: string, updatedData: IUpdateVenue): Promise<void> => {
+    const updateVenue = async (updatedData: IUpdateVenue): Promise<void> => {
         try {
             const response = await $api<IUpdateVenue>(`${API_BASE_URL}/api/admin/Venue/venue`, {
                 method: 'PUT',
@@ -59,18 +59,19 @@ export const useGetAllVenuesStore = defineStore('getallvenues', () => {
         }
     };
 
-    const deleteVenue = async (venueId: string): Promise<void> => {
+    const deleteVenue = async (venueId: number): Promise<void> => {
         try {
-            const response = await $api(`${API_BASE_URL}/api/admin/Venue/venues/${venueId}`, {
+            const response = await $api(`${API_BASE_URL}/api/admin/Venue/venue`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                body: JSON.stringify([venueId]),
             });
 
-            if (response && response.data) {
+            if (response) {
                 // Remove the deleted venue from the venues array
-                venues.value = venues.value.filter(venue => venue.id !== venueId);
+               // venues.value = venues.value.filter(venue => venue.id !== venueId);
                 console.log('Venue deleted successfully:', venueId);
                 toastr.success('Venue deleted successfully!', 'Success');
             } else {

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
-import { useGetAllSeatingStore } from '../store/GetAllSectionsStore';
+import { useGetAllSeatingStore } from '../store/GetAllSeatingStore';
 import { useSaveVenueStore } from '../store/SaveVenueStore';
 import type { ISection } from '~/interfaces/ISection';
 import type { ISeat } from '~/interfaces/ISeat';
@@ -105,7 +105,7 @@ const clearCanvas = () => {
                 <h3>Select Sections</h3>
                 <div v-for="section in seatingStore.sections" :key="section.id">
                     <input type="checkbox" :value="section" class="form-check-input me-2" v-model="selectedSections" />
-                    <label class="form-label">Section ID: {{ section.id }}</label>
+                    <label class="form-label">{{ section.name }}</label>
                 </div>
                 <button @click="drawSelectedSections" class="btn btn-primary">OK</button>
             </div>
