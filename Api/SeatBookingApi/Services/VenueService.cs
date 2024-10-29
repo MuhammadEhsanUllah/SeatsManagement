@@ -25,7 +25,7 @@ namespace SeatBookingApi.Services
                     Id = v.Id,
                     Name = v.Name,
                     Sections = v.VenueSections
-                        .Where(vs => vs.Section.IsDeleted != true)
+                        .Where(vs => vs.Section.IsDeleted != true && vs.IsDeleted != true)
                         .Select(vs => new GetSection_DTO
                         {
                             Id = vs.Section.Id,
