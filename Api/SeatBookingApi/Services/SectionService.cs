@@ -24,7 +24,7 @@ namespace SeatBookingApi.Services
                     ColumnsCount = x.ColumnsCount,
                     //SectionNumber = x.SectionNumber,
                     Name = x.Name,
-                    Seats = _context.Seats.Where(y => y.SectionId == x.Id).Select(s => new GetSeat_DTO()
+                    Seats = _context.Seats.Where(y => y.SectionId == x.Id && y.IsDeleted != true).Select(s => new GetSeat_DTO()
                     {
                         Id = s.Id,
                         Color = s.Color,
@@ -107,11 +107,6 @@ namespace SeatBookingApi.Services
         }
         public async Task<ResponseModel> UpdateSection(UpdateSection_DTO model)
         {
-            if (model == null)
-            {
-                return ResponseModel.ErrorResponse("Invalid data provided.");
-            }
-
             try
             {
                 var section = await _context.Sections
@@ -124,37 +119,43 @@ namespace SeatBookingApi.Services
                     return ResponseModel.ErrorResponse("Section not found.");
                 }
 
-                // Update section details
                 section.Name = model.Name;
-                section.RowsCount = model.RowsCount;
-                section.ColumnsCount = model.ColumnsCount;
                 section.DateUpdated = DateTime.Now;
 
-                var existingSeatIds = section.Seats
-                    .Where(seat => !seat.IsDeleted)
-                    .Select(seat => seat.Id)
-                    .ToHashSet();
-
-                var seatsToDelete = existingSeatIds.Except(model.SeatsIds).ToList();
-                foreach (var id in seatsToDelete)
+                var modelSeatIds = model.Seats.Select(s => s.Id).ToList();
+                foreach (var modelSeat in model.Seats)
                 {
-                    var seat = section.Seats.FirstOrDefault(x => x.Id == id);
+                    var seat = section.Seats.FirstOrDefault(seat => seat.Id == modelSeat.Id && !seat.IsDeleted);
                     if (seat != null)
                     {
-                        seat.IsDeleted = true;
+                        seat.Price = modelSeat.Price;
+                        seat.X = modelSeat.X;
+                        seat.Y = modelSeat.Y;
+                        seat.Radius = modelSeat.Radius;
+                        seat.Color = modelSeat.Color;
+                        seat.DateUpdated = DateTime.Now;
                     }
                 }
 
-                _context.Sections.Update(section);
-                await _context.SaveChangesAsync();
+                foreach (var existingSeat in section.Seats)
+                {
+                    if (!modelSeatIds.Contains(existingSeat.Id) && !existingSeat.IsDeleted)
+                    {
+                        existingSeat.IsDeleted = true;
+                        existingSeat.DateUpdated = DateTime.Now;
+                    }
+                }
 
-                return ResponseModel.SuccessResponse("Section updated successfully");
+                await _context.SaveChangesAsync();
+                return ResponseModel.SuccessResponse("Section updated successfully.");
             }
             catch (Exception ex)
             {
                 return ResponseModel.ErrorResponse(ex.Message);
             }
         }
+
+
         public async Task<ResponseModel> RestoreSectionSeats(int sectionId)
         {
             try
