@@ -62,6 +62,11 @@ namespace SeatBookingApi.Services
         {
             try
             {
+                var existingVenue = await _context.Venues
+                .Where(x => x.Name == model.Name && x.IsDeleted != true).FirstOrDefaultAsync();
+                if (existingVenue != null)
+                    return ResponseModel.ErrorResponse("Venue already exists with this name");
+
                 var venue = new Venue()
                 {
                     Name = model.Name,

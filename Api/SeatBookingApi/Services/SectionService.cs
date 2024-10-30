@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using SeatBookingApi.Domain;
 using SeatBookingApi.DTOs;
 using SeatBookingApi.Interfaces;
@@ -46,6 +47,10 @@ namespace SeatBookingApi.Services
             // .FirstOrDefaultAsync();
 
             //int prevSectionNumber = prevSection?.SectionNumber ?? 0;
+            var existingSection = await _context.Sections
+                .Where(x => x.Name == model.Name && x.IsDeleted != true).FirstOrDefaultAsync();
+            if (existingSection != null)
+                return ResponseModel.ErrorResponse("Section already exists with this name");
 
             var section = new Section()
             {
