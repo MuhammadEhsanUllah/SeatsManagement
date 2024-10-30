@@ -91,5 +91,27 @@ export const useSeatingStore = defineStore('seating', () => {
             toastr.error('Failed to delete venue!', 'Error');
         }
     };
-    return { name, rowsCount, columnsCount, seats, saveSeats, deleteSection, updateSection };
+    const RestoreSectionSeats = async (sectionId: number): Promise<void> => {
+        try {
+            const response = await $api(`${API_BASE_URL}/api/admin/Section/${sectionId}/restore`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response) {
+                // Remove the deleted venue from the venues array
+                // venues.value = venues.value.filter(venue => venue.id !== venueId);
+                toastr.success('Section Restore successfully!', 'Success');
+            } else {
+                console.error('API response is not structured as expected:', response);
+                toastr.error('Failed to delete venue!', 'Error');
+            }
+        } catch (error) {
+            console.error('Error deleting venue:', error);
+            toastr.error('Failed to delete venue!', 'Error');
+        }
+    };
+    return { name, rowsCount, columnsCount, seats, saveSeats, deleteSection, updateSection, RestoreSectionSeats };
 });

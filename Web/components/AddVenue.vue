@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useGetAllSeatingStore } from '../store/GetAllSeatingStore';
 import { useSaveVenueStore } from '../store/SaveVenueStore';
-import type { ISection } from '~/interfaces/ISection';
+import type { ISection,ISectionPosition } from '~/interfaces/ISection';
 import type { ISeat } from '~/interfaces/ISeat';
 
 const seatingStore = useGetAllSeatingStore();
@@ -10,7 +10,10 @@ const saveVenueStore = useSaveVenueStore();
 const mainCanvas = ref<HTMLCanvasElement | null>(null);
 const isModalOpen = ref(false);
 const selectedSections = ref<ISection[]>([]);
-
+const sectionPositions= ref<ISectionPosition[]>([]);
+let isDragging = ref(false);
+let draggingIndex = ref(-1);
+let offset = { x: 0, y: 0 };
 onMounted(async () => {
     await seatingStore.getSections();
 });
@@ -28,12 +31,52 @@ const drawSelectedSections = () => {
     drawCanvas(selectedSections.value);
 };
 
+const startDragging = (event: MouseEvent) => {
+    const { offsetX, offsetY } = event;
+    sectionPositions.value.forEach((canvasProps, index) => {
+        if (
+            offsetX >= canvasProps.x &&
+            offsetX <= canvasProps.x + canvasProps.width &&
+            offsetY >= canvasProps.y &&
+            offsetY <= canvasProps.y + canvasProps.height
+        ) {
+            isDragging.value = true;
+            draggingIndex.value = index;
+            offset.x = offsetX - canvasProps.x;
+            offset.y = offsetY - canvasProps.y;
+        }
+    });
+    drawCanvas(selectedSections.value);
+};
+
+const drag = (event: MouseEvent) => {
+    if (!isDragging.value || draggingIndex.value === -1) return;
+
+    const { offsetX, offsetY } = event;
+    let canvasProps = sectionPositions.value[draggingIndex.value];
+    let indexIs = draggingIndex.value;
+
+    // Update the position of the dragged section
+    canvasProps.x = offsetX - offset.x;
+    canvasProps.y = offsetY - offset.y;
+    sectionPositions.value[draggingIndex.value].x = offsetX - offset.x;
+    sectionPositions.value[draggingIndex.value].y = offsetY - offset.y;
+    // Redraw the canvas with the new positions
+
+    console.log(canvasProps, sectionPositions.value);
+    drawCanvas(selectedSections.value);
+};
+
+const stopDragging = () => {
+    isDragging.value = false;
+    draggingIndex.value = -1;
+};
 const drawCanvas = (sectionsToDraw: ISection[]) => {
-    const canvas = mainCanvas.value;
+    const canvas = mainCanvas.value; 
+
     if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
-            
             const gap = 20;
             const maxWidth = 800;
             let currentY = 50;
@@ -54,14 +97,12 @@ const drawCanvas = (sectionsToDraw: ISection[]) => {
                 totalHeight = Math.max(totalHeight, currentY + sectionHeight + gap);
             });
 
-            
             canvas.height = totalHeight;
-            
             currentY = 50;
             currentX = 20;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+            sectionPositions.value = [];
+            
             sectionsToDraw.forEach((section) => {
                 const maxX = Math.max(...section.seats.map(seat => seat.x));
                 const canvasWidth = maxX + 2 * section.seats[0].radius + 20;
@@ -72,13 +113,22 @@ const drawCanvas = (sectionsToDraw: ISection[]) => {
                     currentY += sectionHeight + gap;
                 }
 
-                // Draw the section container.
+                // Store the section position
+                sectionPositions.value.push({
+                    name: section.name,
+                    x: currentX,
+                    y: currentY,
+                    width: canvasWidth,
+                    height: sectionHeight,
+                });
+
+                // Draw the section
                 ctx.fillStyle = 'lightblue';
                 ctx.fillRect(currentX, currentY, canvasWidth, sectionHeight);
                 ctx.strokeStyle = 'black';
                 ctx.strokeRect(currentX, currentY, canvasWidth, sectionHeight);
 
-                // Draw each seat in the section.
+                // Draw seats in the section
                 section.seats.forEach((seat: ISeat) => {
                     ctx.beginPath();
                     ctx.arc(currentX + seat.x, currentY + seat.y, seat.radius, 0, Math.PI * 2);
@@ -89,9 +139,12 @@ const drawCanvas = (sectionsToDraw: ISection[]) => {
 
                 currentX += canvasWidth + gap;
             });
+
+            console.log("Section Positions:", sectionPositions); 
         }
     }
 };
+
 
 
 const saveVenue = async () => {
@@ -142,7 +195,8 @@ const clearCanvas = () => {
         </div>
 
         <div class="canvas-container">
-            <canvas ref="mainCanvas" class="main-canvas" width="1000"></canvas>
+            <canvas ref="mainCanvas" class="main-canvas" width="1000" @mousedown="startDragging"
+            @mousemove="drag" @mouseup="stopDragging" @mouseleave="stopDragging"></canvas>
         </div>
         <div class="mt-3">
             <button @click="saveVenue" class="btn btn-success">Save Venue</button>

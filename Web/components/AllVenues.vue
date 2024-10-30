@@ -1,9 +1,13 @@
 <template>
   <div>
-
+    <div class="">
+      <button @click="zoom(true)" class="btn btn-secondary m-3 btn-lg ">Zoom In</button>
+      <button class="btn btn-secondary m-3 btn-lg " @click="zoom(false)">Zoom Out</button>
+    </div>
     <div v-for="venue in venues" :key="venue.id" class="venue-container" :data-id="venue.id">
       <div class="scrollable-canvas-container">
-        <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"></canvas>
+        <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"
+        ></canvas>
       </div>
       <div class="actions">
         <button @click="openEditModal(venue)">Edit</button>
@@ -66,6 +70,7 @@ const showConfirmationModal = ref(false);
 const editableVenue = ref<IVenueSection>({ id: 0, name: '', sections: [] });
 const selectedSections = ref<number[]>([]);
 const venueToDelete = ref<number | null>(null);
+let zoomer = 1;
 
 onMounted(async () => {
   await seatingStore.getVenues();
@@ -134,34 +139,38 @@ const deleteVenue = async (venueId: number) => {
   }
 };
 
-const drawVenues = () => {
+const drawVenues = (scaleFactor: number = 1) => {
   venues.value.forEach((venue) => {
     const canvas = document.getElementById(`canvas-${venue.id}`) as HTMLCanvasElement;
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.scale(scaleFactor, scaleFactor);
+
         ctx.fillStyle = 'black';
         ctx.font = '24px Arial';
         ctx.fillText(
           venue.name,
-          canvas.width / 2 - ctx.measureText(venue.name).width / 2,
-          30
+          (canvas.width / 2 - ctx.measureText(venue.name).width / 2) / scaleFactor,
+          30 / scaleFactor
         );
 
-        const gap = 20;
-        let currentY = 50;
-        let currentX = 20;
-        const maxWidth = 800;
+        const gap = 20 / scaleFactor;
+        let currentY = 50 / scaleFactor;
+        let currentX = 20 / scaleFactor;
+        const maxWidth = 800 / scaleFactor;
         let totalHeight = currentY;
 
         venue.sections.forEach((section) => {
           const maxX = Math.max(...section.seats.map(seat => seat.x));
-          const canvasWidth = maxX + 2 * section.seats[0].radius + 20;
-          const sectionHeight = Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20;
+          const canvasWidth = (maxX + 2 * section.seats[0].radius + 20) * scaleFactor;
+          const sectionHeight = (Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20) * scaleFactor;
 
           if (currentX + canvasWidth > maxWidth) {
-            currentX = 20;
+            currentX = 20 / scaleFactor;
             currentY += sectionHeight + gap;
           }
 
@@ -170,20 +179,20 @@ const drawVenues = () => {
           currentX += canvasWidth + gap;
         });
 
-        canvas.height = totalHeight;
+        canvas.height = totalHeight * scaleFactor;
 
-        currentY = 50;
-        currentX = 20;
+        currentY = 50 / scaleFactor;
+        currentX = 20 / scaleFactor;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         venue.sections.forEach((section) => {
           const maxX = Math.max(...section.seats.map(seat => seat.x));
-          const canvasWidth = maxX + 2 * section.seats[0].radius + 20;
-          const sectionHeight = Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20;
+          const canvasWidth = (maxX + 2 * section.seats[0].radius + 20) * scaleFactor;
+          const sectionHeight = (Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20) * scaleFactor;
 
           if (currentX + canvasWidth > maxWidth) {
-            currentX = 20;
+            currentX = 20 / scaleFactor;
             currentY += sectionHeight + gap;
           }
 
@@ -194,7 +203,7 @@ const drawVenues = () => {
 
           section.seats.forEach((seat: ISeat) => {
             ctx.beginPath();
-            ctx.arc(currentX + seat.x, currentY + seat.y, seat.radius, 0, Math.PI * 2);
+            ctx.arc(currentX + seat.x * scaleFactor, currentY + seat.y * scaleFactor, seat.radius * scaleFactor, 0, Math.PI * 2);
             ctx.fillStyle = seat.color;
             ctx.fill();
             ctx.closePath();
@@ -202,10 +211,26 @@ const drawVenues = () => {
 
           currentX += canvasWidth + gap;
         });
+
+        // Restore the default scaling
+        ctx.restore();
       }
     }
   });
 };
+
+
+const zoom = (val: boolean) => {
+      if (val == true) {
+        if (parseFloat(zoomer.toFixed(1)) == 1.4) return;
+        zoomer += 0.2;
+      } else if (val == false) {
+
+        if (parseFloat(zoomer.toFixed(1)) === 0.6) return;
+        zoomer -= 0.2;
+      }
+      drawVenues(zoomer);
+    }
 
 </script>
 

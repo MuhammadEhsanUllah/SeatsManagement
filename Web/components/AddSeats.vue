@@ -188,6 +188,16 @@ const deleteSection = async (sectionId: number) => {
         console.error('Error deleting section:', error);
     }
 };
+const RestoreSectionSeats = async (sectionId: number) => {
+    try {
+        await seatingStore.RestoreSectionSeats(sectionId);
+         
+        renderSeats();
+        getallseats.getSections();
+    } catch (error) {
+        console.error('Error deleting section:', error);
+    }
+};
 
 const EditSeats = (section: ISection) => {
 
@@ -362,6 +372,8 @@ const ClearForm = () => {
     <div class="mt-3">
         <button type="button" @click="saveUpdatedSection(sectionId)" class="btn btn-success" v-if="showEditForm">Update
             Selection</button>
+        <button type="button" @click="RestoreSectionSeats(sectionId)" class="btn btn-secondary" v-if="showEditForm">Restore
+            Seats</button>
         <button type="button" @click="saveSelection" class="btn btn-success" v-if="!showEditForm">Save Selection</button>
         <button type="button" @click="clearSeats" class="btn btn-warning ms-4" v-if="!showEditForm">Clear All Seats</button>
         <button type="button" @click="deleteSeat" class="btn btn-danger ms-4">Delete Selected Seats</button>
