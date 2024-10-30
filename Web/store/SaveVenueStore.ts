@@ -8,13 +8,13 @@ import type { ISection } from '~/interfaces/ISection';
 
 export const useSaveVenueStore = defineStore('saveVenue', () => {
     const venueName = ref<string>('');
-    const selectedSections = ref<ISection[]>([]); 
+    const selectedSections = ref<ISection[]>([]);
     const { public: { API_BASE_URL } } = useRuntimeConfig();
 
     const saveVenue = async (): Promise<any> => {
         const payload = {
-            name: String(venueName.value), 
-            sectionIds: selectedSections.value.map(section => Number(section.id)), 
+            name: String(venueName.value),
+            sectionIds: selectedSections.value.map(section => Number(section.id)),
         };
 
         console.log("Payload", payload);
@@ -27,6 +27,10 @@ export const useSaveVenueStore = defineStore('saveVenue', () => {
                 },
                 body: JSON.stringify(payload),
             });
+            if (!response.status) {
+                toastr.error(response.errors[0]);
+                return;
+            }
             toastr.success('Venue has been successfully saved!', 'Success');
             return response;
         } catch (error) {

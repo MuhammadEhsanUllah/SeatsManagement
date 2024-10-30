@@ -23,6 +23,8 @@ const showConfirmationModal = ref(false);
 const sectionToDelete = ref<number | null>(null);
 const showEditForm = ref(false);
 const sectionId = ref<number>(0);
+const selectedPrice = ref<number>(0);
+let selectedSeatsArray = ref<number[]>([]);
 
 const generateSeats = (sectionNumber: number) => {
     const spacing = 45;
@@ -57,18 +59,22 @@ const handleSeatClick = (seat: ISeat) => {
     seat.isSelected = !seat.isSelected;
     seat.color = seat.isSelected ? 'red' : getColorByPrice(seat.price);
     if (seat.isSelected) {
-        selectedSeats.value.push(seat.id); 
+        selectedSeats.value.push(seat.id);
+        selectedSeatsArray.value.push(seat.id);
+
     } else {
-        
+
         selectedSeats.value = selectedSeats.value.filter(id => id !== seat.id);
+        selectedSeatsArray.value = selectedSeatsArray.value.filter(id => id !== seat.id);
     }
-    console.log("Selected Seats",selectedSeats.value);
+    console.log("Selected Seats", selectedSeats.value);
     renderSeats();
 };
 
 const deleteSeat = () => {
     seats = seats.filter(seat => !seat.isSelected);
     selectedSeats.value = [];
+    selectedSeatsArray.value = [];
     renderSeats();
 };
 
@@ -148,9 +154,8 @@ const saveSelection = async () => {
         console.log(result);
         console.log('Seats saved successfully:', result);
         clearSeats();
-        rows.value = 0;
-        columns.value = 0;
-        getallseats.getSections(); 
+        getallseats.getSections();
+        ClearForm();
     } catch (error) {
         console.error('Failed to save seats:', error);
     }
@@ -185,7 +190,7 @@ const deleteSection = async (sectionId: number) => {
 };
 
 const EditSeats = (section: ISection) => {
-    
+
     sectionId.value = section.id;
     name.value = section.name;
     rows.value = section.rowsCount;
@@ -196,11 +201,10 @@ const EditSeats = (section: ISection) => {
     section.seats.forEach((seatData: ISeat) => {
         seats.push({
             ...seatData,
-            color: getColorByPrice(seatData.price),
+            color: seatData.color,
             isSelected: false
         });
     });
-
 
     renderSeats();
 };
@@ -210,24 +214,77 @@ const hideEditForm = () => {
     name.value = "";
     defaultPrice.value = 100;
     clearSeats();
-        rows.value = 0;
-        columns.value = 0;
+    rows.value = 0;
+    columns.value = 0;
 };
 
 const saveUpdatedSection = async (sectionId: number) => {
-    seatingStore.name = name.value;
-    seatingStore.seats =  seats.filter(seat => !selectedSeats.value.includes(seat.id));
+
+    const updatedPrice = selectedPrice.value !== null ? selectedPrice.value : null;
+
+    const updatedSeats = seats.map((seat) => {
+        if (selectedSeatsArray.value.includes(seat.id) && updatedPrice !== null) {
+            return {
+                ...seat,
+                price: seat.price,
+                color: seat.color
+            };
+        }
+        return seat;
+    });
+    console.log(updatedSeats);
+    const payload = {
+        id: sectionId,
+        name: name.value,
+        rowsCount: rows.value,
+        columnsCount: columns.value,
+        seats: updatedSeats.map((seat) => ({
+            x: Number(seat.x),
+            y: Number(seat.y),
+            radius: Number(seat.radius),
+            price: String(seat.price),
+            color: String(seat.color),
+            id: Number(seat.id)
+        }))
+    };
 
     try {
-        await seatingStore.updateSection(sectionId); 
-        
+        await seatingStore.updateSection(sectionId, payload);
+
         hideEditForm();
-        getallseats.getSections(); 
+        getallseats.getSections();
+        selectedSeats.value = [];
+        ClearForm();
+
     } catch (error) {
         console.error('Failed to update section:', error);
     }
 };
 
+const updateSeatColors = () => {
+    if (selectedPrice.value) {
+        const color = getColorByPrice(selectedPrice.value);
+        console.log(color);
+        selectedSeats.value.forEach(seatId => {
+            const seat = seats.find(seat => seat.id === seatId);
+            if (seat) {
+                seat.color = color;
+                seat.price = selectedPrice.value;
+            }
+        });
+        console.log("Before render", seats);
+        renderSeats();
+        selectedSeats.value = [];
+        console.log("Aftedr render", seats);
+    }
+};
+
+const ClearForm = () => {
+    rows.value = 0;
+    columns.value = 0;
+    name.value = "";
+    defaultPrice.value = 100;
+}
 
 </script>
 
@@ -286,12 +343,14 @@ const saveUpdatedSection = async (sectionId: number) => {
             </div>
             <div class="mb-3">
                 <label for="defaultPrice" class="form-label">Default Seat Price:</label>
-                <select id="defaultPrice" v-model.number="defaultPrice" class="form-control">
+                <select id="defaultPrice" class="form-control" v-model.number="selectedPrice" @change="updateSeatColors()">
+                    <option value="0">Select a Price</option>
                     <option value="100">100$</option>
                     <option value="150">150$</option>
                     <option value="200">200$</option>
                 </select>
             </div>
+
             <button @click="hideEditForm" class="btn btn-secondary mt-2">Cancel</button>
         </div>
     </div>
@@ -301,7 +360,8 @@ const saveUpdatedSection = async (sectionId: number) => {
         <label class="form-label">Select All Seats</label>
     </div>
     <div class="mt-3">
-        <button type="button" @click="saveUpdatedSection(sectionId)" class="btn btn-success" v-if="showEditForm">Update Selection</button>
+        <button type="button" @click="saveUpdatedSection(sectionId)" class="btn btn-success" v-if="showEditForm">Update
+            Selection</button>
         <button type="button" @click="saveSelection" class="btn btn-success" v-if="!showEditForm">Save Selection</button>
         <button type="button" @click="clearSeats" class="btn btn-warning ms-4" v-if="!showEditForm">Clear All Seats</button>
         <button type="button" @click="deleteSeat" class="btn btn-danger ms-4">Delete Selected Seats</button>

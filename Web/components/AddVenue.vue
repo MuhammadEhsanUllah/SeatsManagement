@@ -33,14 +33,14 @@ const drawCanvas = (sectionsToDraw: ISection[]) => {
     if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             const gap = 20;
+            const maxWidth = 800;
             let currentY = 50;
             let currentX = 20;
-            const maxWidth = 800;
+            let totalHeight = currentY;
 
             sectionsToDraw.forEach((section) => {
-
                 const maxX = Math.max(...section.seats.map(seat => seat.x));
                 const canvasWidth = maxX + 2 * section.seats[0].radius + 20;
                 const sectionHeight = Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20;
@@ -50,11 +50,35 @@ const drawCanvas = (sectionsToDraw: ISection[]) => {
                     currentY += sectionHeight + gap;
                 }
 
+                currentX += canvasWidth + gap;
+                totalHeight = Math.max(totalHeight, currentY + sectionHeight + gap);
+            });
+
+            
+            canvas.height = totalHeight;
+            
+            currentY = 50;
+            currentX = 20;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            sectionsToDraw.forEach((section) => {
+                const maxX = Math.max(...section.seats.map(seat => seat.x));
+                const canvasWidth = maxX + 2 * section.seats[0].radius + 20;
+                const sectionHeight = Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20;
+
+                if (currentX + canvasWidth > maxWidth) {
+                    currentX = 20;
+                    currentY += sectionHeight + gap;
+                }
+
+                // Draw the section container.
                 ctx.fillStyle = 'lightblue';
                 ctx.fillRect(currentX, currentY, canvasWidth, sectionHeight);
                 ctx.strokeStyle = 'black';
                 ctx.strokeRect(currentX, currentY, canvasWidth, sectionHeight);
 
+                // Draw each seat in the section.
                 section.seats.forEach((seat: ISeat) => {
                     ctx.beginPath();
                     ctx.arc(currentX + seat.x, currentY + seat.y, seat.radius, 0, Math.PI * 2);
@@ -65,10 +89,10 @@ const drawCanvas = (sectionsToDraw: ISection[]) => {
 
                 currentX += canvasWidth + gap;
             });
-            sectionsToDraw = [];
         }
     }
 };
+
 
 const saveVenue = async () => {
     saveVenueStore.selectedSections = selectedSections.value;
@@ -97,7 +121,7 @@ const clearCanvas = () => {
 
 <template>
     <div>
-        <button class="btn btn-secondary my-3" @click="openModal">Show All Sections</button>
+        <button class="btn btn-secondary my-3" @click="openModal">Select Sections</button>
 
         <div v-if="isModalOpen" class="modal">
             <div class="modal-content">
@@ -113,11 +137,12 @@ const clearCanvas = () => {
 
         <div class="mb-3">
             <label class="form-label">Venue Name</label>
-            <input type="text" v-model="saveVenueStore.venueName" placeholder="Enter Venue Name" class="form-control w-25" required />
+            <input type="text" v-model="saveVenueStore.venueName" placeholder="Enter Venue Name" class="form-control w-25"
+                required />
         </div>
 
         <div class="canvas-container">
-            <canvas ref="mainCanvas" class="main-canvas" width="1000" height="400"></canvas>
+            <canvas ref="mainCanvas" class="main-canvas" width="1000"></canvas>
         </div>
         <div class="mt-3">
             <button @click="saveVenue" class="btn btn-success">Save Venue</button>
@@ -128,11 +153,13 @@ const clearCanvas = () => {
 <style scoped>
 .canvas-container {
     overflow-y: auto;
+    max-height: 400px;
     border: 2px solid black;
 }
 
 .main-canvas {
     display: block;
+    width: 100%;
     height: auto;
 }
 

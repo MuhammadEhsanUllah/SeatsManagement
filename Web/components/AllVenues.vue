@@ -1,12 +1,13 @@
 <template>
   <div>
-    <div class="scrollable-canvas-container">
-      <div v-for="venue in venues" :key="venue.id" class="venue-container" :data-id="venue.id">
+
+    <div v-for="venue in venues" :key="venue.id" class="venue-container" :data-id="venue.id">
+      <div class="scrollable-canvas-container">
         <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"></canvas>
-        <div class="actions">
-          <button @click="openEditModal(venue)">Edit</button>
-          <button @click="openConfirmationModal(venue.id)">Delete</button>
-        </div>
+      </div>
+      <div class="actions">
+        <button @click="openEditModal(venue)">Edit</button>
+        <button @click="openConfirmationModal(venue.id)">Delete</button>
       </div>
     </div>
 
@@ -21,19 +22,14 @@
 
         <h4>Sections</h4>
         <div v-for="section in allSections" :key="section.id">
-          <input
-            type="checkbox"
-            class="form-check-input"
-            :value="section.id"
-            v-model="selectedSections"
-          />
+          <input type="checkbox" class="form-check-input" :value="section.id" v-model="selectedSections" />
           <label class="form-label ms-2">
             {{ section.name }}
           </label>
         </div>
 
         <div class="modal-actions">
-          <button @click="saveChanges" class="btn btn-success">Save</button>
+          <button @click="UpdateVenue" class="btn btn-success">Save</button>
           <button @click="closeModal" class="btn btn-secondary">Cancel</button>
         </div>
       </div>
@@ -59,6 +55,7 @@ import { useGetAllVenuesStore } from '../store/GetAllVenuesStore';
 import { useGetAllSeatingStore } from '../store/GetAllSeatingStore';
 import type { IVenueSection } from '~/interfaces/IVenue';
 import type { ISection } from '~/interfaces/ISection';
+import type { ISeat } from '~/interfaces/ISeat';
 
 const seatingStore = useGetAllVenuesStore();
 const sectionStore = useGetAllSeatingStore();
@@ -101,7 +98,7 @@ const closeConfirmationModal = () => {
   venueToDelete.value = null;
 };
 
-const saveChanges = async () => {
+const UpdateVenue = async () => {
   const updatedVenue = {
     ...editableVenue.value,
     sectionIds: allSections.value
@@ -112,11 +109,8 @@ const saveChanges = async () => {
   try {
     await seatingStore.updateVenue(updatedVenue);
 
-    const index = venues.value.findIndex(venue => venue.id === updatedVenue.id);
-    if (index !== -1) {
-      venues.value[index] = { ...venues.value[index], ...updatedVenue };
-    }
-
+    await seatingStore.getVenues();
+    venues.value = seatingStore.venues;
     showModal.value = false;
     drawVenues();
   } catch (error) {
@@ -128,12 +122,12 @@ const saveChanges = async () => {
 const deleteVenue = async (venueId: number) => {
   try {
     await seatingStore.deleteVenue(venueId);
-    
+
     venues.value = venues.value.filter(venue => venue.id !== venueId);
-    
+
     showConfirmationModal.value = false;
     venueToDelete.value = null;
-    
+
     drawVenues();
   } catch (error) {
     console.error('Error deleting venue:', error);
@@ -149,12 +143,17 @@ const drawVenues = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'black';
         ctx.font = '24px Arial';
-        ctx.fillText(venue.name, canvas.width / 2 - ctx.measureText(venue.name).width / 2, 30);
+        ctx.fillText(
+          venue.name,
+          canvas.width / 2 - ctx.measureText(venue.name).width / 2,
+          30
+        );
 
         const gap = 20;
         let currentY = 50;
         let currentX = 20;
         const maxWidth = 800;
+        let totalHeight = currentY;
 
         venue.sections.forEach((section) => {
           const maxX = Math.max(...section.seats.map(seat => seat.x));
@@ -166,34 +165,48 @@ const drawVenues = () => {
             currentY += sectionHeight + gap;
           }
 
-          const sectionCanvas = document.createElement('canvas');
-          sectionCanvas.width = canvasWidth;
-          sectionCanvas.height = sectionHeight;
+          totalHeight = Math.max(totalHeight, currentY + sectionHeight + gap);
 
-          const sectionCtx = sectionCanvas.getContext('2d');
+          currentX += canvasWidth + gap;
+        });
 
-          if (sectionCtx) {
-            sectionCtx.fillStyle = 'lightblue';
-            sectionCtx.fillRect(0, 0, canvasWidth, sectionHeight);
-            sectionCtx.strokeStyle = 'black';
-            sectionCtx.strokeRect(0, 0, canvasWidth, sectionHeight);
+        canvas.height = totalHeight;
 
-            section.seats.forEach((seat) => {
-              sectionCtx.beginPath();
-              sectionCtx.arc(seat.x, seat.y, seat.radius, 0, Math.PI * 2);
-              sectionCtx.fillStyle = seat.color;
-              sectionCtx.fill();
-              sectionCtx.closePath();
-            });
+        currentY = 50;
+        currentX = 20;
 
-            ctx.drawImage(sectionCanvas, currentX, currentY);
-            currentX += canvasWidth + gap;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        venue.sections.forEach((section) => {
+          const maxX = Math.max(...section.seats.map(seat => seat.x));
+          const canvasWidth = maxX + 2 * section.seats[0].radius + 20;
+          const sectionHeight = Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20;
+
+          if (currentX + canvasWidth > maxWidth) {
+            currentX = 20;
+            currentY += sectionHeight + gap;
           }
+
+          ctx.fillStyle = 'lightblue';
+          ctx.fillRect(currentX, currentY, canvasWidth, sectionHeight);
+          ctx.strokeStyle = 'black';
+          ctx.strokeRect(currentX, currentY, canvasWidth, sectionHeight);
+
+          section.seats.forEach((seat: ISeat) => {
+            ctx.beginPath();
+            ctx.arc(currentX + seat.x, currentY + seat.y, seat.radius, 0, Math.PI * 2);
+            ctx.fillStyle = seat.color;
+            ctx.fill();
+            ctx.closePath();
+          });
+
+          currentX += canvasWidth + gap;
         });
       }
     }
   });
 };
+
 </script>
 
 <style scoped>
@@ -202,11 +215,13 @@ const drawVenues = () => {
   border: 2px solid black;
   position: relative;
 }
+
 .scrollable-canvas-container {
-  max-height: 600px;
-  overflow-y: auto; 
-  overflow-x: hidden; 
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
+
 .actions {
   display: flex;
   gap: 10px;
@@ -216,6 +231,8 @@ const drawVenues = () => {
 .venue-canvas {
   display: block;
   height: auto;
+  width: 100%;
+  overflow-y: auto;
 }
 
 .modal-overlay {

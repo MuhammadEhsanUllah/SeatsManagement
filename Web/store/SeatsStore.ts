@@ -36,6 +36,10 @@ export const useSeatingStore = defineStore('seating', () => {
                 },
                 body: JSON.stringify(payload),
             });
+            if (!response.status) {
+                toastr.error(response.errors[0]);
+                return;
+            }
             toastr.success('Section has been successfully saved!', 'Success');
             return response;
         } catch (error) {
@@ -43,20 +47,7 @@ export const useSeatingStore = defineStore('seating', () => {
             throw error;
         }
     };
-    const updateSection = async (sectionId: number): Promise<any> => {
-        const payload = {
-            id: sectionId, // Add the section ID here
-            name: String(name.value),
-            seats: seats.value.map(seat => ({
-                x: Number(seat.x),
-                y: Number(seat.y),
-                radius: Number(seat.radius),
-                price: String(seat.price),
-                color: String(seat.color),
-                id: Number(seat.id)
-            }))
-        };
-
+    const updateSection = async (sectionId: number, payload: any): Promise<any> => {
         console.log("Payload", payload);
 
         try {
@@ -74,6 +65,7 @@ export const useSeatingStore = defineStore('seating', () => {
             throw error;
         }
     };
+
 
 
     const deleteSection = async (sectionId: number): Promise<void> => {
