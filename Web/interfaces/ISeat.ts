@@ -3,7 +3,7 @@ export interface ISeat {
     y: number;
     radius: number;
     price: number;
-    id: string;
+    id: number;
     row: number;
     isSelected: boolean;
     color: string;

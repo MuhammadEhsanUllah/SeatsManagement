@@ -1,9 +1,29 @@
-// interfaces/ISection.ts
+
 import type { ISeat } from './ISeat';
 
 export interface ISection {
-    id: string;              // Name or title of the section
-    rowsCount: number;       // Number of rows in the section
-    columnsCount: number;    // Number of columns in the section
-    seats: ISeat[];          // Array of seats in the section
+    id: number; 
+    name:string;       
+    rowsCount: number; 
+    columnsCount: number;  
+    x:number;
+    y:number;
+    width:number;
+    height:number;
+    seats: ISeat[];          
+}
+
+export interface ISectionPosition {
+    sectionId:number;
+    name:string;        
+    x:number;
+    y:number;
+    width:number;
+    height:number;        
+}
+export interface IUpdateSectionPosition {
+    sectionId:number;
+    venueId:number;        
+    x:number;
+    y:number;        
 }

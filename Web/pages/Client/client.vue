@@ -6,7 +6,7 @@
                 <Sidebar />
             </div>
             <div class="col-10 main-content">
-                <AddSeats />
+                <client />
             </div>
         </div>
     </div>
