@@ -14,6 +14,7 @@ export interface ISection {
 }
 
 export interface ISectionPosition {
+    sectionId:number;
     name:string;        
     x:number;
     y:number;

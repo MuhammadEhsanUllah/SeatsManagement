@@ -4,6 +4,8 @@ export interface IVenue {
     id: number;
     sectionNumber: number;
     rowsCount: number;
+    x:number;
+    y:number;
     columnsCount: number;
     seats: ISeat[];
 }

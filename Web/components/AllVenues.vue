@@ -6,8 +6,19 @@
     </div>
     <div v-for="venue in venues" :key="venue.id" class="venue-container" :data-id="venue.id">
       <div class="scrollable-canvas-container">
-        <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"
-        ></canvas>
+        <!-- <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"></canvas> -->
+        <canvas
+        :id="`canvas-${venue.id}`"
+        class="venue-canvas"
+        width="1000"
+        height="400"
+        @mousedown="(e) => startDragging(e, venue.id)"  
+        @mousemove="drag"
+        @mouseup="stopDragging"
+        @mouseleave="stopDragging"
+      />
+      
+      
       </div>
       <div class="actions">
         <button @click="openEditModal(venue)">Edit</button>
@@ -58,8 +69,7 @@ import { ref, onMounted, nextTick } from 'vue';
 import { useGetAllVenuesStore } from '../store/GetAllVenuesStore';
 import { useGetAllSeatingStore } from '../store/GetAllSeatingStore';
 import type { IVenueSection } from '~/interfaces/IVenue';
-import type { ISection } from '~/interfaces/ISection';
-import type { ISeat } from '~/interfaces/ISeat';
+import type { ISection, ISectionPosition } from '~/interfaces/ISection';
 
 const seatingStore = useGetAllVenuesStore();
 const sectionStore = useGetAllSeatingStore();
@@ -70,7 +80,13 @@ const showConfirmationModal = ref(false);
 const editableVenue = ref<IVenueSection>({ id: 0, name: '', sections: [] });
 const selectedSections = ref<number[]>([]);
 const venueToDelete = ref<number | null>(null);
+const sectionPositions = ref<ISectionPosition[]>([]);
 let zoomer = 1;
+//drag
+const isDragging = ref(false);
+let draggingIndex = ref(-1);
+let dragVenueId = ref<number | null>(null);
+let offset = { x: 0, y: 0 };
 
 onMounted(async () => {
   await seatingStore.getVenues();
@@ -104,16 +120,32 @@ const closeConfirmationModal = () => {
 };
 
 const UpdateVenue = async () => {
+  // Re-calculate positions to include newly checked sections
+  await drawSectionsOnCanvas(selectedSections.value);
+  console.log("After draw venue");
+
   const updatedVenue = {
     ...editableVenue.value,
     sectionIds: allSections.value
       .filter(section => selectedSections.value.includes(section.id))
       .map(section => section.id),
+
+    // Send updated section positions to the backend
+    sections: sectionPositions.value
+      .filter(position => selectedSections.value.includes(position.sectionId))
+      .map(position => ({
+        sectionId: position.sectionId,
+        x: position.x,
+        y: position.y,
+        width: position.width,
+        height: position.height
+      }))
   };
+
+  console.log("Updated Venue",updatedVenue);
 
   try {
     await seatingStore.updateVenue(updatedVenue);
-
     await seatingStore.getVenues();
     venues.value = seatingStore.venues;
     showModal.value = false;
@@ -139,14 +171,17 @@ const deleteVenue = async (venueId: number) => {
   }
 };
 
-const drawVenues = (scaleFactor: number = 1) => {
+const drawVenues = async (scaleFactor = 1) => {
+  console.log("Start draw venue");
+  // Clear `sectionPositions` before drawing to avoid duplicates
+  sectionPositions.value = [];
+  
   venues.value.forEach((venue) => {
     const canvas = document.getElementById(`canvas-${venue.id}`) as HTMLCanvasElement;
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         ctx.save();
         ctx.scale(scaleFactor, scaleFactor);
 
@@ -158,79 +193,198 @@ const drawVenues = (scaleFactor: number = 1) => {
           30 / scaleFactor
         );
 
-        const gap = 20 / scaleFactor;
-        let currentY = 50 / scaleFactor;
-        let currentX = 20 / scaleFactor;
-        const maxWidth = 800 / scaleFactor;
-        let totalHeight = currentY;
-
+        // Loop over each section
         venue.sections.forEach((section) => {
           const maxX = Math.max(...section.seats.map(seat => seat.x));
-          const canvasWidth = (maxX + 2 * section.seats[0].radius + 20) * scaleFactor;
-          const sectionHeight = (Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20) * scaleFactor;
-
-          if (currentX + canvasWidth > maxWidth) {
-            currentX = 20 / scaleFactor;
-            currentY += sectionHeight + gap;
-          }
-
-          totalHeight = Math.max(totalHeight, currentY + sectionHeight + gap);
-
-          currentX += canvasWidth + gap;
-        });
-
-        canvas.height = totalHeight * scaleFactor;
-
-        currentY = 50 / scaleFactor;
-        currentX = 20 / scaleFactor;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        venue.sections.forEach((section) => {
-          const maxX = Math.max(...section.seats.map(seat => seat.x));
-          const canvasWidth = (maxX + 2 * section.seats[0].radius + 20) * scaleFactor;
-          const sectionHeight = (Math.max(...section.seats.map(seat => seat.y)) + 2 * section.seats[0].radius + 20) * scaleFactor;
-
-          if (currentX + canvasWidth > maxWidth) {
-            currentX = 20 / scaleFactor;
-            currentY += sectionHeight + gap;
-          }
+          const maxY = Math.max(...section.seats.map(seat => seat.y));
+          const sectionWidth = (maxX + 2 * (section.seats[0]?.radius || 10) + 20) * scaleFactor;
+          const sectionHeight = (maxY + 2 * (section.seats[0]?.radius || 10) + 20) * scaleFactor;
+          const posX = section.x * scaleFactor;
+          const posY = section.y * scaleFactor;
 
           ctx.fillStyle = 'lightblue';
-          ctx.fillRect(currentX, currentY, canvasWidth, sectionHeight);
+          ctx.fillRect(posX, posY, sectionWidth, sectionHeight);
           ctx.strokeStyle = 'black';
-          ctx.strokeRect(currentX, currentY, canvasWidth, sectionHeight);
+          ctx.strokeRect(posX, posY, sectionWidth, sectionHeight);
 
-          section.seats.forEach((seat: ISeat) => {
+          // Avoid duplicates by checking for existing section ID
+          if (!sectionPositions.value.some(pos => pos.sectionId === section.id)) {
+            sectionPositions.value.push({
+              sectionId: section.id,
+              name: section.name,
+              x: posX / scaleFactor,
+              y: posY / scaleFactor,
+              width: sectionWidth / scaleFactor,
+              height: sectionHeight / scaleFactor
+            });
+          }
+
+          section.seats.forEach((seat) => {
             ctx.beginPath();
-            ctx.arc(currentX + seat.x * scaleFactor, currentY + seat.y * scaleFactor, seat.radius * scaleFactor, 0, Math.PI * 2);
+            ctx.arc(
+              posX + seat.x * scaleFactor,
+              posY + seat.y * scaleFactor,
+              seat.radius * scaleFactor,
+              0,
+              Math.PI * 2
+            );
             ctx.fillStyle = seat.color;
             ctx.fill();
             ctx.closePath();
           });
-
-          currentX += canvasWidth + gap;
         });
 
-        // Restore the default scaling
         ctx.restore();
       }
     }
   });
+  console.log("End draw venue");
+};
+
+const drawSectionsOnCanvas = async (selectedSectionIds: number[]) => {
+  console.log("Drawing sections...");
+  const sectionsToDraw = allSections.value.filter(section => selectedSectionIds.includes(section.id));
+ 
+  initializeCanvasPositions(sectionsToDraw);
+};
+
+const initializeCanvasPositions = (sectionsToDraw: ISection[], canvasWidth = 1000) => {
+  const offsetX = 20; // horizontal spacing between sections
+  const offsetY = 50; // vertical spacing between rows
+  let currentX = offsetX;
+  let currentY = offsetY;
+
+  sectionsToDraw.forEach((section) => {
+    // Calculate dynamic width and height based on seat positions, similar to `drawVenues`
+    const maxX = Math.max(...section.seats.map(seat => seat.x));
+    const maxY = Math.max(...section.seats.map(seat => seat.y));
+    const sectionWidth = maxX + 2 * (section.seats[0]?.radius || 10) + 20; // Dynamic width
+    const sectionHeight = maxY + 2 * (section.seats[0]?.radius || 10) + 20; // Dynamic height
+
+    // Check if adding this section would exceed the canvas width
+    if (currentX + sectionWidth > canvasWidth) {
+      // Move to the next row
+      currentX = offsetX;
+      currentY += sectionHeight + offsetY;
+    }
+
+    // Add section position
+    sectionPositions.value.push({
+      sectionId: section.id,
+      name: section.name,
+      x: currentX,
+      y: currentY,
+      width: sectionWidth,
+      height: sectionHeight,
+    });
+
+    // Update X position for the next section
+    currentX += sectionWidth + offsetX;
+  });
+};
+
+const zoom = (val: boolean) => {
+  if (val == true) {
+    if (parseFloat(zoomer.toFixed(1)) == 1.4) return;
+    zoomer += 0.2;
+  } else if (val == false) {
+
+    if (parseFloat(zoomer.toFixed(1)) === 0.6) return;
+    zoomer -= 0.2;
+  }
+  drawVenues(zoomer);
+}
+
+// Function to handle mouse down event (start dragging)
+const startDragging = (event: MouseEvent, venueId: number) => {
+  const { offsetX, offsetY } = event;
+  const positions = sectionPositions.value;
+
+  positions.forEach((canvasProps, index) => {
+    if (
+      offsetX >= canvasProps.x &&
+      offsetX <= canvasProps.x + canvasProps.width &&
+      offsetY >= canvasProps.y &&
+      offsetY <= canvasProps.y + canvasProps.height
+    ) {
+      isDragging.value = true;
+      draggingIndex.value = index;
+      dragVenueId.value = venueId;
+      offset.x = offsetX - canvasProps.x;
+      offset.y = offsetY - canvasProps.y;
+    }
+  });
+};
+
+// Function to handle mouse move event (dragging)
+const drag = (event: MouseEvent) => {
+  if (!isDragging.value || draggingIndex.value === -1 || dragVenueId.value === null) return;
+
+  const { offsetX, offsetY } = event;
+  const positions = sectionPositions.value;
+  const canvasProps = positions[draggingIndex.value];
+
+  canvasProps.x = offsetX - offset.x;
+  canvasProps.y = offsetY - offset.y;
+
+  renderCanvas(dragVenueId.value)
+
+  // drawVenues(zoomer); // Redraw with the updated positions
+};
+
+// Function to handle mouse up or mouse leave event (stop dragging)
+const stopDragging = () => {
+  isDragging.value = false;
+  draggingIndex.value = -1;
+  dragVenueId.value = null;
+};
+const renderCanvas = (venueId: number) => {
+  const canvas = document.getElementById(`canvas-${venueId}`) as HTMLCanvasElement;
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // Clear the canvas before rendering
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Loop through each section position to render sections and seats
+      sectionPositions.value.forEach((canvasProps) => {
+        // Render section rectangle
+        ctx.fillStyle = 'lightblue';
+        ctx.fillRect(canvasProps.x, canvasProps.y, canvasProps.width, canvasProps.height);
+        ctx.strokeStyle = 'black';
+        ctx.strokeRect(canvasProps.x, canvasProps.y, canvasProps.width, canvasProps.height);
+
+        // Find the corresponding section data by ID
+        const section = allSections.value.find(sec => sec.id === canvasProps.sectionId);
+        if (section) {
+          section.seats.forEach((seat) => {
+            // Render seat as a circle within the section boundaries
+            ctx.beginPath();
+            ctx.arc(
+              canvasProps.x + seat.x,    // Calculate seat position based on section offset
+              canvasProps.y + seat.y,
+              seat.radius,
+              0,
+              Math.PI * 2
+            );
+            ctx.fillStyle = seat.color;
+            ctx.fill();
+            ctx.closePath();
+          });
+        }
+      });
+    }
+  }
 };
 
 
-const zoom = (val: boolean) => {
-      if (val == true) {
-        if (parseFloat(zoomer.toFixed(1)) == 1.4) return;
-        zoomer += 0.2;
-      } else if (val == false) {
-
-        if (parseFloat(zoomer.toFixed(1)) === 0.6) return;
-        zoomer -= 0.2;
-      }
-      drawVenues(zoomer);
-    }
+// Add these event listeners to the canvas
+// const canvasMouseEvents = {
+//   mousedown: (e: MouseEvent) => startDragging(e, venue.id),
+//   mousemove: drag,
+//   mouseup: stopDragging,
+//   mouseleave: stopDragging,
+// };
 
 </script>
 

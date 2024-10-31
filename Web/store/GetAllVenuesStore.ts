@@ -34,20 +34,19 @@ export const useGetAllVenuesStore = defineStore('getallvenues', () => {
 
     const updateVenue = async (updatedData: IUpdateVenue): Promise<void> => {
         try {
-            const response = await $api<IUpdateVenue>(`${API_BASE_URL}/api/admin/Venue/venue`, {
+            const response = await $api<any>(`${API_BASE_URL}/api/admin/Venue/venue`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(updatedData),
             });
-
+            
             if (response) {
-                // // Update the venues array with the updated venue
-                // const index = venues.value.findIndex(venue => venue.id === venueId);
-                // if (index !== -1) {
-                //     venues.value[index] = response.data;
-                // }
+                if (!response.status) {
+                    toastr.error(response.errors[0]);
+                    return;
+                }
                 toastr.success('Venue updated successfully!', 'Success');
             } else {
                 console.error('API response is not structured as expected:', response);

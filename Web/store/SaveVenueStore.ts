@@ -12,13 +12,18 @@ export const useSaveVenueStore = defineStore('saveVenue', () => {
     const { public: { API_BASE_URL } } = useRuntimeConfig();
 
     const saveVenue = async (): Promise<any> => {
+        // Build the payload based on the selected sections with correct x and y positions
         const payload = {
             name: String(venueName.value),
-            sectionIds: selectedSections.value.map(section => Number(section.id)),
+            sections: selectedSections.value.map(section => ({
+                sectionId: Number(section.id),
+                x: Number(section.x),
+                y: Number(section.y)
+            }))
         };
-
-        console.log("Payload", payload);
-
+        
+        console.log("Payload", payload); // For debugging to verify payload structure
+    
         try {
             const response = await $api<any>(`${API_BASE_URL}/api/admin/Venue/venue`, {
                 method: 'POST',
@@ -38,6 +43,8 @@ export const useSaveVenueStore = defineStore('saveVenue', () => {
             throw error;
         }
     };
+    
+    
 
     return { venueName, selectedSections, saveVenue };
 });
