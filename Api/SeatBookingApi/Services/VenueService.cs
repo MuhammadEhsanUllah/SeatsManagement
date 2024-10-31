@@ -194,7 +194,29 @@ namespace SeatBookingApi.Services
                 return ResponseModel.ErrorResponse($"An error occurred while updating the venue: {ex.Message}");
             }
         }
+        public async Task<ResponseModel> UpdateSectionPosition(UpdateSectionPosition_DTO model)
+        {
+            try
+            {
+                var venueSection = await _context.VenueSections
+                    .Where(x => x.VenueId == model.VenueId && x.SectionId == model.SectionId && x.IsDeleted != true).FirstOrDefaultAsync();
+                if (venueSection != null)
+                {
+                    venueSection.X = model.X;
+                    venueSection.Y = model.Y;
+                    venueSection.DateUpdated = DateTime.Now;
+                    await _context.SaveChangesAsync();
+                }
+                else
+                    return ResponseModel.ErrorResponse("Not Found.");
 
+                return ResponseModel.SuccessResponse("Section updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ResponseModel.ErrorResponse(ex.Message);
+            }
+        }
 
     }
 }

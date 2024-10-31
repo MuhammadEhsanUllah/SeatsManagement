@@ -23,9 +23,12 @@ builder.Services.AddCors(options =>
                           .AllowAnyMethod()
                           .AllowAnyHeader());
 });
+//Admin
 builder.Services.AddScoped<ISectionService, SectionService>();
 builder.Services.AddScoped<IVenueService, VenueService>();
-builder.Services.AddScoped<ICanvasService, CanvasService>();
+//Client
+builder.Services.AddScoped<IClientSeatService, ClientSeatService>();
+
 
 var app = builder.Build();
 

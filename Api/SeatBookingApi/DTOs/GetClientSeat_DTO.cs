@@ -1,6 +1,6 @@
 ﻿namespace SeatBookingApi.DTOs
 {
-    public class GetCanvas_DTO:AddCanvas_DTO
+    public class GetClientSeat_DTO : AddSeat_DTO
     {
         public int Id { get; set; }
     }

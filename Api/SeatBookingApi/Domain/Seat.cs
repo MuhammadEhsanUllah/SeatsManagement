@@ -13,6 +13,7 @@ namespace SeatBookingApi.Domain
         public string Price { get; set; }
         public string Color { get; set; }
         public bool IsReserved { get; set; }
+        public int? ClientId { get; set; }
         public int SectionId { get; set; }
 
         [ForeignKey("SectionId")]

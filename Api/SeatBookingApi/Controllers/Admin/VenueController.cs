@@ -64,5 +64,17 @@ namespace SeatBookingApi.Controllers
 
             return response;
         }
+        /// <summary>
+        /// update section position of a specific venue
+        /// </summary>
+        /// <returns>update section position</returns>
+        [HttpPut("section/position")]
+        public async Task<ResponseModel> UpdateSectionPosition(UpdateSectionPosition_DTO model)
+        {
+            var response = new ResponseModel();
+            response = await _venueService.UpdateSectionPosition(model);
+
+            return response;
+        }
     }
 }
