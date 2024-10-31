@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SeatBookingApi.DTOs;
 using SeatBookingApi.Interfaces;
 using SeatBookingApi.ResponseModels;
+using SeatBookingApi.Services;
 
 namespace SeatBookingApi.Controllers.Client
 {
@@ -14,6 +15,18 @@ namespace SeatBookingApi.Controllers.Client
         public SeatController(IClientSeatService clientSeatService)
         {
             _clientSeatService = clientSeatService;
+        }
+        /// <summary>
+        /// Return a list of reserved seats for client
+        /// </summary>
+        /// <returns>A list of reserved seats</returns>
+        [HttpGet("venues")]
+        public async Task<ResponseModel> GetReservedSeats(int clientId)
+        {
+            var response = new ResponseModel();
+            response = await _clientSeatService.GetReservedSeats(clientId);
+
+            return response;
         }
         /// <summary>
         /// toogle reserve seat
