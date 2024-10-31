@@ -1,7 +1,7 @@
 // store/GetAllSectionsStore.ts
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { ISection } from '~/interfaces/ISection';
+import type { IUpdateSectionPosition } from '~/interfaces/ISection';
 import { $api } from '~/composables/api';
 import toastr from 'toastr';
 import 'toastr/build/toastr.min.css';
@@ -82,6 +82,27 @@ export const useGetAllVenuesStore = defineStore('getallvenues', () => {
             toastr.error('Failed to delete venue!', 'Error');
         }
     };
+    const updateSectionPosition = async (UpdatedPosition: IUpdateSectionPosition): Promise<void> => {
+        try {
+            const response = await $api(`${API_BASE_URL}/api/admin/Venue/section/position`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(UpdatedPosition),
+            });
 
-    return { venues, getVenues, updateVenue, deleteVenue };
+            if (response) {
+                
+            } else {
+                console.error('API response is not structured as expected:', response);
+                toastr.error('Failed to delete venue!', 'Error');
+            }
+        } catch (error) {
+            console.error('Error deleting venue:', error);
+            toastr.error('Failed to delete venue!', 'Error');
+        }
+    };
+
+    return { venues, getVenues, updateVenue, deleteVenue,updateSectionPosition };
 });

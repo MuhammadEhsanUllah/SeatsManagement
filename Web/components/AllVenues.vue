@@ -7,18 +7,11 @@
     <div v-for="venue in venues" :key="venue.id" class="venue-container" :data-id="venue.id">
       <div class="scrollable-canvas-container">
         <!-- <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"></canvas> -->
-        <canvas
-        :id="`canvas-${venue.id}`"
-        class="venue-canvas"
-        width="1000"
-        height="400"
-        @mousedown="(e) => startDragging(e, venue.id)"  
-        @mousemove="drag"
-        @mouseup="stopDragging"
-        @mouseleave="stopDragging"
-      />
-      
-      
+        <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"
+          @mousedown="(e) => startDragging(e, venue.id)" @mousemove="drag" @mouseup="stopDragging"
+          @mouseleave="stopDragging" />
+
+
       </div>
       <div class="actions">
         <button @click="openEditModal(venue)">Edit</button>
@@ -69,7 +62,7 @@ import { ref, onMounted, nextTick } from 'vue';
 import { useGetAllVenuesStore } from '../store/GetAllVenuesStore';
 import { useGetAllSeatingStore } from '../store/GetAllSeatingStore';
 import type { IVenueSection } from '~/interfaces/IVenue';
-import type { ISection, ISectionPosition } from '~/interfaces/ISection';
+import type { ISection, ISectionPosition, IUpdateSectionPosition } from '~/interfaces/ISection';
 
 const seatingStore = useGetAllVenuesStore();
 const sectionStore = useGetAllSeatingStore();
@@ -85,7 +78,7 @@ let zoomer = 1;
 //drag
 const isDragging = ref(false);
 let draggingIndex = ref(-1);
-let dragVenueId = ref<number | null>(null);
+let dragVenueId = ref<number | null>(0);
 let offset = { x: 0, y: 0 };
 
 onMounted(async () => {
@@ -142,7 +135,7 @@ const UpdateVenue = async () => {
       }))
   };
 
-  console.log("Updated Venue",updatedVenue);
+  console.log("Updated Venue", updatedVenue);
 
   try {
     await seatingStore.updateVenue(updatedVenue);
@@ -175,7 +168,7 @@ const drawVenues = async (scaleFactor = 1) => {
   console.log("Start draw venue");
   // Clear `sectionPositions` before drawing to avoid duplicates
   sectionPositions.value = [];
-  
+
   venues.value.forEach((venue) => {
     const canvas = document.getElementById(`canvas-${venue.id}`) as HTMLCanvasElement;
     if (canvas) {
@@ -244,7 +237,7 @@ const drawVenues = async (scaleFactor = 1) => {
 const drawSectionsOnCanvas = async (selectedSectionIds: number[]) => {
   console.log("Drawing sections...");
   const sectionsToDraw = allSections.value.filter(section => selectedSectionIds.includes(section.id));
- 
+
   initializeCanvasPositions(sectionsToDraw);
 };
 
@@ -268,7 +261,6 @@ const initializeCanvasPositions = (sectionsToDraw: ISection[], canvasWidth = 100
       currentY += sectionHeight + offsetY;
     }
 
-    // Add section position
     sectionPositions.value.push({
       sectionId: section.id,
       name: section.name,
@@ -278,7 +270,6 @@ const initializeCanvasPositions = (sectionsToDraw: ISection[], canvasWidth = 100
       height: sectionHeight,
     });
 
-    // Update X position for the next section
     currentX += sectionWidth + offsetX;
   });
 };
@@ -295,7 +286,6 @@ const zoom = (val: boolean) => {
   drawVenues(zoomer);
 }
 
-// Function to handle mouse down event (start dragging)
 const startDragging = (event: MouseEvent, venueId: number) => {
   const { offsetX, offsetY } = event;
   const positions = sectionPositions.value;
@@ -316,28 +306,46 @@ const startDragging = (event: MouseEvent, venueId: number) => {
   });
 };
 
-// Function to handle mouse move event (dragging)
-const drag = (event: MouseEvent) => {
+const drag = async (event: MouseEvent) => {
   if (!isDragging.value || draggingIndex.value === -1 || dragVenueId.value === null) return;
 
   const { offsetX, offsetY } = event;
   const positions = sectionPositions.value;
   const canvasProps = positions[draggingIndex.value];
 
-  canvasProps.x = offsetX - offset.x;
-  canvasProps.y = offsetY - offset.y;
+  canvasProps.x = offsetX - offset.x; 
+  canvasProps.y = offsetY - offset.y; 
+  console.log(positions);
 
-  renderCanvas(dragVenueId.value)
+  const updatePayload: IUpdateSectionPosition = {
+    sectionId: canvasProps.sectionId,
+    venueId: dragVenueId.value, 
+    x: canvasProps.x,
+    y: canvasProps.y,
+  };
 
-  // drawVenues(zoomer); // Redraw with the updated positions
+  await updateSectionPosition(updatePayload); 
+  console.log(canvasProps.sectionId, dragVenueId.value);
+
+  renderCanvas(dragVenueId.value); 
 };
 
-// Function to handle mouse up or mouse leave event (stop dragging)
+const updateSectionPosition = async (updateData: IUpdateSectionPosition) => {
+  try {
+    await seatingStore.updateSectionPosition(updateData); // Pass the whole object
+    console.log(`Section ${updateData.sectionId} updated to new position:`, { x: updateData.x, y: updateData.y });
+  } catch (error) {
+    console.error('Error updating section position:', error);
+    toastr.error('Failed to update section position!', 'Error');
+  }
+};
+
 const stopDragging = () => {
   isDragging.value = false;
   draggingIndex.value = -1;
   dragVenueId.value = null;
 };
+
 const renderCanvas = (venueId: number) => {
   const canvas = document.getElementById(`canvas-${venueId}`) as HTMLCanvasElement;
   if (canvas) {

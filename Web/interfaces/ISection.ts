@@ -21,3 +21,9 @@ export interface ISectionPosition {
     width:number;
     height:number;        
 }
+export interface IUpdateSectionPosition {
+    sectionId:number;
+    venueId:number;        
+    x:number;
+    y:number;        
+}
