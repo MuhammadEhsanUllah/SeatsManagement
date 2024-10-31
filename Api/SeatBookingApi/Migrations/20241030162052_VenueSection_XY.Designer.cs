@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SeatBookingApi.Domain;
 
@@ -11,9 +12,10 @@ using SeatBookingApi.Domain;
 namespace SeatBookingApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241030162052_VenueSection_XY")]
+    partial class VenueSection_XY
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -184,10 +186,10 @@ namespace SeatBookingApi.Migrations
                     b.Property<int>("VenueId")
                         .HasColumnType("int");
 
-                    b.Property<int>("X")
+                    b.Property<int?>("X")
                         .HasColumnType("int");
 
-                    b.Property<int>("Y")
+                    b.Property<int?>("Y")
                         .HasColumnType("int");
 
                     b.HasKey("Id");

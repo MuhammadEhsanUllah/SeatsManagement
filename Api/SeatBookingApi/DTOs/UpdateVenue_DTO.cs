@@ -4,6 +4,6 @@
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public List<int> SectionIds { get; set; }
+        public List<AddVenueSection_DTO> Sections { get; set; }
     }
 }

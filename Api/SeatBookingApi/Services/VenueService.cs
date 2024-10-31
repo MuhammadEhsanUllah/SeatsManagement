@@ -33,6 +33,8 @@ namespace SeatBookingApi.Services
                             Name = vs.Section.Name,
                             RowsCount = vs.Section.RowsCount,
                             ColumnsCount = vs.Section.ColumnsCount,
+                            X = vs.X,
+                            Y = vs.Y,
                             Seats = vs.Section.Seats
                                 .Where(s => s.IsDeleted != true)
                                 .Select(s => new GetSeat_DTO
@@ -76,12 +78,14 @@ namespace SeatBookingApi.Services
                 await _context.Venues.AddAsync(venue);
                 await _context.SaveChangesAsync();
 
-                foreach (var sectionId in model.SectionIds)
+                foreach (var section in model.Sections)
                 {
                     var venueSection = new VenueSection
                     {
                         VenueId = venue.Id,
-                        SectionId = sectionId,
+                        SectionId = section.SectionId,
+                        X = section.X,
+                        Y = section.Y,
                         CreatedDate = DateTime.Now,
                         IsDeleted = false
                     };
@@ -109,6 +113,7 @@ namespace SeatBookingApi.Services
                     foreach (var venue in venuees)
                     {
                         venue.IsDeleted = true;
+                        venue.DateUpdated = DateTime.Now;
                     }
                 }
                 await _context.SaveChangesAsync();
@@ -125,32 +130,54 @@ namespace SeatBookingApi.Services
             try
             {
                 var venue = await _context.Venues
-                    .Where(x => x.IsDeleted != true)
-                    .Include(v => v.VenueSections)
-                    .FirstOrDefaultAsync(v => v.Id == model.Id);
+                    .Where(x => !x.IsDeleted && x.Id == model.Id)
+                    .Include(v => v.VenueSections.Where(vs => vs.IsDeleted != true))
+                    .FirstOrDefaultAsync();
 
                 if (venue == null)
                 {
-                    return ResponseModel.ErrorResponse("Not Found.");
+                    return ResponseModel.ErrorResponse("Venue not found.");
                 }
+
+                // Update Venue properties
                 venue.Name = model.Name;
-                var existingSectionIds = venue.VenueSections
-                    .Where(vs => vs.IsDeleted != true)
-                    .Select(vs => vs.SectionId)
-                    .ToList();
 
-                var sectionsToAdd = model.SectionIds.Except(existingSectionIds).ToList();
-                var sectionsToRemove = existingSectionIds.Except(model.SectionIds).ToList();
+                var existingSectionIds = venue.VenueSections.Select(vs => vs.SectionId).ToList();
+                var newSectionIds = model.Sections.Select(s => s.SectionId).ToList();
 
+                var sectionsToAdd = newSectionIds.Except(existingSectionIds).ToList();
+                var sectionsToRemove = existingSectionIds.Except(newSectionIds).ToList();
+                var sectionsToUpdate = existingSectionIds.Intersect(newSectionIds).ToList();
+
+                // Add new sections
                 foreach (var sectionId in sectionsToAdd)
                 {
+                    var newSection = model.Sections.FirstOrDefault(x => x.SectionId == sectionId);
+                    if (newSection == null) continue;
+
                     venue.VenueSections.Add(new VenueSection
                     {
                         VenueId = model.Id,
                         SectionId = sectionId,
-                        CreatedDate = DateTime.Now,
+                        X = newSection.X,
+                        Y = newSection.Y,
+                        CreatedDate = DateTime.UtcNow,
                         IsDeleted = false
                     });
+                }
+
+                // Update existing sections
+                foreach (var sectionId in sectionsToUpdate)
+                {
+                    var section = model.Sections.FirstOrDefault(x => x.SectionId == sectionId);
+                    var dbSection = venue.VenueSections.FirstOrDefault(vs => vs.SectionId == sectionId);
+
+                    if (section != null && dbSection != null)
+                    {
+                        dbSection.X = section.X;
+                        dbSection.Y = section.Y;
+                        dbSection.DateUpdated = DateTime.Now;
+                    }
                 }
 
                 foreach (var section in venue.VenueSections.Where(vs => sectionsToRemove.Contains(vs.SectionId)))
@@ -160,13 +187,14 @@ namespace SeatBookingApi.Services
                 }
 
                 await _context.SaveChangesAsync();
-                return ResponseModel.SuccessResponse("Venue updated successfully");
+                return ResponseModel.SuccessResponse("Venue updated successfully.");
             }
             catch (Exception ex)
             {
-                return ResponseModel.ErrorResponse(ex.Message);
+                return ResponseModel.ErrorResponse($"An error occurred while updating the venue: {ex.Message}");
             }
         }
+
 
     }
 }
