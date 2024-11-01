@@ -39,14 +39,6 @@ const route = useRoute();
             All Venues
           </nuxt-link>
         </li>
-        <li>
-          <nuxt-link 
-            to="/Client/client" 
-            :class="{'nav-link text-white': true, 'active': route?.path === '/Client/client'}" 
-            aria-current="page">
-            Client Page
-          </nuxt-link>
-        </li>
       </ul>
       <hr>
     </div>

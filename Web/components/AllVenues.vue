@@ -115,7 +115,6 @@ const closeConfirmationModal = () => {
 };
 
 const UpdateVenue = async () => {
-  // Re-calculate positions to include newly checked sections
   await drawSectionsOnCanvas(selectedSections.value);
   console.log("After draw venue");
 
@@ -125,7 +124,6 @@ const UpdateVenue = async () => {
       .filter(section => selectedSections.value.includes(section.id))
       .map(section => section.id),
 
-    // Send updated section positions to the backend
     sections: sectionPositions.value
       .filter(position => selectedSections.value.includes(position.sectionId))
       .map(position => ({
@@ -184,10 +182,9 @@ const drawVenues = async (scaleFactor = 1) => {
         ) + 50;
 
         // Set canvas dimensions
-        canvas.height = totalHeight * scaleFactor; // Set canvas height to accommodate all sections
-        canvas.width = canvas.width; // Maintain width or set it based on your requirements
+        canvas.height = totalHeight * scaleFactor;
+        canvas.width = canvas.width;
 
-        // Clear the canvas and set background color
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'lightgrey';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -195,7 +192,6 @@ const drawVenues = async (scaleFactor = 1) => {
         ctx.save();
         ctx.scale(scaleFactor, scaleFactor);
 
-        // Draw venue name
         ctx.fillStyle = 'black';
         ctx.font = '24px Arial';
         ctx.fillText(
@@ -205,7 +201,6 @@ const drawVenues = async (scaleFactor = 1) => {
         );
         venuename.value = venue.name;
 
-        // Loop over each section
         venue.sections.forEach((section) => {
           const maxX = Math.max(...section.seats.map(seat => seat.x));
           const maxY = Math.max(...section.seats.map(seat => seat.y));
@@ -214,7 +209,6 @@ const drawVenues = async (scaleFactor = 1) => {
           const posX = section.x * scaleFactor;
           const posY = section.y * scaleFactor;
 
-          // Draw only the border for each section, without a background
           ctx.strokeStyle = 'black';
           ctx.strokeRect(posX, posY, sectionWidth, sectionHeight);
 
@@ -253,8 +247,6 @@ const drawVenues = async (scaleFactor = 1) => {
 };
 
 
-
-
 const drawSectionsOnCanvas = async (selectedSectionIds: number[]) => {
   console.log("Drawing sections...");
   const sectionsToDraw = allSections.value.filter(section => selectedSectionIds.includes(section.id));
@@ -263,17 +255,16 @@ const drawSectionsOnCanvas = async (selectedSectionIds: number[]) => {
 };
 
 const initializeCanvasPositions = (sectionsToDraw: ISection[], canvasWidth = 1000) => {
-  const offsetX = 20; // horizontal spacing between sections
-  const offsetY = 50; // vertical spacing between rows
+  const offsetX = 20; 
+  const offsetY = 50;
   let currentX = offsetX;
   let currentY = offsetY;
 
   sectionsToDraw.forEach((section) => {
-    // Calculate dynamic width and height based on seat positions, similar to `drawVenues`
     const maxX = Math.max(...section.seats.map(seat => seat.x));
     const maxY = Math.max(...section.seats.map(seat => seat.y));
-    const sectionWidth = maxX + 2 * (section.seats[0]?.radius || 10) + 20; // Dynamic width
-    const sectionHeight = maxY + 2 * (section.seats[0]?.radius || 10) + 20; // Dynamic height
+    const sectionWidth = maxX + 2 * (section.seats[0]?.radius || 10) + 20;
+    const sectionHeight = maxY + 2 * (section.seats[0]?.radius || 10) + 20; 
 
     // Check if adding this section would exceed the canvas width
     if (currentX + sectionWidth > canvasWidth) {
@@ -375,31 +366,26 @@ const renderCanvas = (venueId: number) => {
   if (canvas) {
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      // Clear the canvas before rendering
+      
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Set the main canvas background to light grey
       ctx.fillStyle = 'lightgrey';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw the venue name at the top center
       ctx.fillStyle = 'black';
       ctx.font = '24px Arial';
-
-      // Loop through each section position to render sections and seats
       sectionPositions.value.forEach((canvasProps) => {
-        // Draw only the border for each section without filling it
+        
         ctx.strokeStyle = 'black';
         ctx.strokeRect(canvasProps.x, canvasProps.y, canvasProps.width, canvasProps.height);
 
-        // Find the corresponding section data by ID
         const section = allSections.value.find(sec => sec.id === canvasProps.sectionId);
         if (section) {
           section.seats.forEach((seat) => {
-            // Render seat as a circle within the section boundaries
+            
             ctx.beginPath();
             ctx.arc(
-              canvasProps.x + seat.x,    // Calculate seat position based on section offset
+              canvasProps.x + seat.x,   
               canvasProps.y + seat.y,
               seat.radius,
               0,
@@ -415,15 +401,6 @@ const renderCanvas = (venueId: number) => {
   }
 };
 
-
-
-// Add these event listeners to the canvas
-// const canvasMouseEvents = {
-//   mousedown: (e: MouseEvent) => startDragging(e, venue.id),
-//   mousemove: drag,
-//   mouseup: stopDragging,
-//   mouseleave: stopDragging,
-// };
 
 </script>
 

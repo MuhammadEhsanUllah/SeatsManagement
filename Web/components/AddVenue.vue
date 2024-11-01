@@ -154,7 +154,6 @@ const stopDragging = () => {
 };
 
 const saveVenue = async () => {
-    // Prepare selected sections with their updated positions
     saveVenueStore.selectedSections = selectedSections.value.map((section) => {
         const position = sectionPositions.value.find(pos => pos.name === section.name);
         return {

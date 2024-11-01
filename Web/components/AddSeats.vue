@@ -139,7 +139,7 @@ const clearSeats = () => {
 };
 
 const saveSelection = async () => {
-    if (rows.value === undefined || columns.value === undefined || seats === undefined) {
+    if (rows.value === undefined || columns.value === undefined || seats === undefined || columns.value == 0 || rows.value == 0) {
         console.error('Rows, columns, or seats are not defined');
         return;
     }
@@ -191,7 +191,7 @@ const deleteSection = async (sectionId: number) => {
 const RestoreSectionSeats = async (sectionId: number) => {
     try {
         await seatingStore.RestoreSectionSeats(sectionId);
-         
+
         renderSeats();
         getallseats.getSections();
     } catch (error) {
@@ -285,6 +285,9 @@ const updateSeatColors = () => {
         console.log("Before render", seats);
         renderSeats();
         selectedSeats.value = [];
+        seats.forEach(s=>s.isSelected =false);
+
+        selectedSeatsArray.value = [];
         console.log("Aftedr render", seats);
     }
 };
