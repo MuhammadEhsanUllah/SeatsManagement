@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SeatBookingApi.DTOs;
 using SeatBookingApi.Interfaces;
 using SeatBookingApi.ResponseModels;
+using SeatBookingApi.Services;
 
 namespace SeatBookingApi.Controllers.Client
 {
@@ -23,7 +24,7 @@ namespace SeatBookingApi.Controllers.Client
         public async Task<ResponseModel> UpdateReserveSeat(UpdateReserveSeat_DTO model)
         {
             var response = new ResponseModel();
-            response = await _clientSeatService.UpdateReserveSeat(model);
+            response = await _clientSeatService.UpdateReservedSeats(model);
 
             return response;
         }
