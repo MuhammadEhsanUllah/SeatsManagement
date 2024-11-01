@@ -6,6 +6,6 @@ namespace SeatBookingApi.Interfaces
     public interface IClientSeatService
     {
         Task<ResponseModel> GetReservedSeats(int ClientId);
-        Task<ResponseModel> UpdateReserveSeat(UpdateReserveSeat_DTO model);
+        Task<ResponseModel> UpdateReservedSeats(UpdateReserveSeat_DTO model);
     }
 }

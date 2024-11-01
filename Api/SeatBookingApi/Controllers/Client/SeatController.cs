@@ -17,18 +17,6 @@ namespace SeatBookingApi.Controllers.Client
             _clientSeatService = clientSeatService;
         }
         /// <summary>
-        /// Return a list of reserved seats for client
-        /// </summary>
-        /// <returns>A list of reserved seats</returns>
-        [HttpGet("venues")]
-        public async Task<ResponseModel> GetReservedSeats(int clientId)
-        {
-            var response = new ResponseModel();
-            response = await _clientSeatService.GetReservedSeats(clientId);
-
-            return response;
-        }
-        /// <summary>
         /// toogle reserve seat
         /// </summary>
         /// <returns>toogle reserve seat</returns>
@@ -36,7 +24,7 @@ namespace SeatBookingApi.Controllers.Client
         public async Task<ResponseModel> UpdateReserveSeat(UpdateReserveSeat_DTO model)
         {
             var response = new ResponseModel();
-            response = await _clientSeatService.UpdateReserveSeat(model);
+            response = await _clientSeatService.UpdateReservedSeats(model);
 
             return response;
         }

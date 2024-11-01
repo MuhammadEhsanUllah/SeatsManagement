@@ -40,21 +40,24 @@ namespace SeatBookingApi.Services
             }
         }
 
-        public async Task<ResponseModel> UpdateReserveSeat(UpdateReserveSeat_DTO model)
+        public async Task<ResponseModel> UpdateReservedSeats(UpdateReserveSeat_DTO model)
         {
             try
             {
-                var seat = await _context.Seats
-                    .Where(x => x.Id == model.SeatId && x.IsDeleted != true).FirstOrDefaultAsync();
-                if (seat == null)
-                    return ResponseModel.ErrorResponse("Not Found");
-                if (seat.ClientId != null && seat.ClientId != model.ClientId)
-                    return ResponseModel.ErrorResponse("Seat already reserved by another person.");
+                var seats = await _context.Seats
+                    .Where(x => x.IsDeleted != true).ToListAsync();
 
-                seat.ClientId = model.ClientId;
-                seat.IsReserved = model.IsReserved;
-                seat.DateUpdated = DateTime.Now;
-
+                foreach(var s in model.Seats)
+                {
+                    var seat = seats.FirstOrDefault(x => x.Id == s.SeatId);
+                    if(seat!= null)
+                    {
+                        seat.IsReserved = s.IsReserved;
+                        seat.ClientId = model.ClientId;
+                        seat.DateUpdated = DateTime.Now;
+                    }
+                }
+                
                 await _context.SaveChangesAsync();
                 return ResponseModel.SuccessResponse("Seat reserved successfully");
             }
