@@ -8,6 +8,8 @@ export interface IVenue {
     y:number;
     columnsCount: number;
     seats: ISeat[];
+    height:number;
+    width:number;
 }
 
 export interface IVenueSection {

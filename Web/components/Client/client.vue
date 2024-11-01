@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- Color Indicators for Seat Pricing -->
     <div class="color-indicator">
       <span class="color-box bg-success"></span>
       <label class="fw-bold">$100 Price</label>
@@ -14,38 +15,114 @@
     </div>
   </div>
 
+  <!-- Venue Canvases Layout -->
   <div class="container-fluid">
     <div class="row">
       <div class="col-9">
         <div v-for="venue in venues" :key="venue.id" class="venue-container" :data-id="venue.id">
           <div class="scrollable-canvas-container">
-            <canvas :id="`canvas-${venue.id}`" class="venue-canvas" width="1000" height="400"></canvas>
+            <!-- Canvas for Each Venue -->
+            <canvas ref="venuecanvas" :id="`canvas-${venue.id}`" @click="handleMainCanvasClick($event, venue)"
+              class="venue-canvas" width="1000" height="400"></canvas>
           </div>
         </div>
       </div>
       <div class="col-3">
-
+        <div>
+          <ul>
+            <li v-for="(selectedSeat, index) in renderSelectedSeats()" :key="selectedSeat.seat.id" class="mb-2">
+              Seat {{ selectedSeat.number }} - Price: ${{ selectedSeat.seat.price }}
+              <button @click="removeSeat(selectedSeat.seat)">Remove</button>
+            </li>
+            <h5 v-if="selectedSeats.length > 0">Total Sum: ${{ totalSum }}</h5>
+          </ul>
+          <button v-if="selectedSeats.length > 0" @click="sendReservedSeats" class="reserve-button">
+            Reserve Seats
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, nextTick } from 'vue';
-import { useGetAllVenuesStore } from '../store/GetAllVenuesStore';
-
+import { ref, onMounted, nextTick, computed } from 'vue';
+import { useClientStore } from '../../store/Client/clientstore';
 import type { IVenueSection } from '~/interfaces/IVenue';
 import type { ISeat } from '~/interfaces/ISeat';
-const seatingStore = useGetAllVenuesStore();
+
+const clientstore = useClientStore();
 const venues = ref<IVenueSection[]>([]);
+const selectedSeats = ref<ISeat[]>([]);
+const clientId = ref<number>(1);
 
 onMounted(async () => {
-  await seatingStore.getVenues();
-  venues.value = seatingStore.venues;
-
+  await clientstore.getAllVenues();
+  venues.value = clientstore.venues;
   await nextTick();
   drawVenues();
 });
+const totalSum = computed(() => {
+  return selectedSeats.value.reduce((sum, seat) => sum + Number(seat.price), 0);
+});
+
+// Function to handle seat click
+const handleSeatClick = (seat: ISeat) => {
+  seat.isSelected = !seat.isSelected; // Toggle selection state
+
+  if (seat.isSelected) {
+    selectedSeats.value.push(seat); // Push the entire seat object
+  } else {
+    removeSeat(seat); // Call the remove function
+  }
+
+  console.log("Selected Seats", selectedSeats.value); // Log selected seats for debugging
+  drawVenues(); // Redraw the canvas to reflect seat selection state
+};
+
+// Function to remove a seat
+const removeSeat = (seat: ISeat) => {
+  // Remove the seat from the selectedSeats array
+  selectedSeats.value = selectedSeats.value.filter(selectedSeat => selectedSeat.id !== seat.id);
+
+  // Set the seat's selection state to false and reset its color
+  seat.isSelected = false;
+  seat.color = getColorByPrice(seat.price); // Reset color to its original based on price
+
+  // Redraw venues to update canvas
+  drawVenues();
+
+  console.log("Selected Seats after removal", selectedSeats.value);
+};
+
+// Render selected seats with sequential numbering
+const renderSelectedSeats = () => {
+  return selectedSeats.value.map((seat, index) => ({
+    number: index + 1, // Sequential numbering starting from 1
+    seat,
+  }));
+};
+
+const sendReservedSeats = async () => {
+  const reservedSeats = selectedSeats.value.map(seat => {
+    return {
+      seatId: seat.id,
+      isReserved: true
+    };
+  });
+  console.log("REserve SEats", reservedSeats);
+  try {
+    await clientstore.reserveSeats(clientstore.clientId, reservedSeats);
+    console.log('Seats reserved successfully:', reservedSeats);
+
+    selectedSeats.value = [];
+    await clientstore.getAllVenues();
+    venues.value = clientstore.venues;
+    drawVenues();
+  } catch (error) {
+    console.error('Error reserving seats:', error);
+  }
+};
 
 const drawVenues = () => {
   venues.value.forEach((venue) => {
@@ -56,7 +133,7 @@ const drawVenues = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
 
-        // Draw venue name at the top center
+        // Draw venue name
         ctx.fillStyle = 'black';
         ctx.font = '24px Arial';
         ctx.fillText(
@@ -65,26 +142,21 @@ const drawVenues = () => {
           30
         );
 
-        // Calculate total canvas height based on section positioning and height
         const gap = 20;
         const totalHeight = Math.max(
           ...venue.sections.map((section) => section.y + Math.max(...section.seats.map(seat => seat.y)) + section.seats[0].radius * 2 + gap)
         ) + 50;
         canvas.height = totalHeight;
 
-        // Draw each section
+        // Draw each section and seat
         venue.sections.forEach((section) => {
-          // Calculate the section's width and height based on seat positions
           const sectionWidth = Math.max(...section.seats.map(seat => seat.x)) + section.seats[0].radius * 2 + 20;
           const sectionHeight = Math.max(...section.seats.map(seat => seat.y)) + section.seats[0].radius * 2 + 20;
-
-          // Use section.x and section.y for section placement on canvas
           ctx.fillStyle = 'lightblue';
           ctx.fillRect(section.x, section.y, sectionWidth, sectionHeight);
           ctx.strokeStyle = 'black';
           ctx.strokeRect(section.x, section.y, sectionWidth, sectionHeight);
 
-          // Draw each seat within the section
           section.seats.forEach((seat) => {
             ctx.beginPath();
             ctx.arc(
@@ -94,7 +166,8 @@ const drawVenues = () => {
               0,
               Math.PI * 2
             );
-            ctx.fillStyle = seat.color;
+
+            ctx.fillStyle = seat.isReserved ? 'yellow' : seat.color;
             ctx.fill();
             ctx.closePath();
           });
@@ -106,9 +179,72 @@ const drawVenues = () => {
   });
 };
 
+// Helper function to get click position relative to the canvas
+const getClickPosition = (event: MouseEvent, canvas: HTMLCanvasElement) => {
+  const rect = canvas.getBoundingClientRect();
+  const clickX = event.clientX - rect.left;
+  const clickY = event.clientY - rect.top;
+  return { clickX, clickY };
+};
 
+// Main canvas click handler
+const handleMainCanvasClick = (event: MouseEvent, venue: IVenueSection) => {
+  const canvas = event.currentTarget as HTMLCanvasElement;
+  const { clickX, clickY } = getClickPosition(event, canvas);
 
+  // Find the clicked section in the current venue
+  const clickedSection = venue.sections.find(
+    (section) =>
+      clickX >= section.x &&
+      clickX <= section.x + Math.max(...section.seats.map(seat => seat.x)) + section.seats[0].radius * 2 &&
+      clickY >= section.y &&
+      clickY <= section.y + Math.max(...section.seats.map(seat => seat.y)) + section.seats[0].radius * 2
+  );
 
+  if (clickedSection) {
+    handleSectionClick(clickedSection, clickX, clickY);
+  }
+};
+
+// Handle click within a specific section
+const handleSectionClick = (section: IVenueSection['sections'][number], clickX: number, clickY: number) => {
+  section.seats.forEach((seat) => {
+    const seatX = section.x + seat.x;
+    const seatY = section.y + seat.y;
+    const distance = Math.sqrt((clickX - seatX) ** 2 + (clickY - seatY) ** 2);
+
+    if (distance <= seat.radius) {
+      toggleSeatSelection(seat); // Handle seat selection
+    }
+  });
+};
+
+// Toggle seat selection and update color
+const toggleSeatSelection = (seat: ISeat) => {
+  if (seat.isReserved) {
+    return;
+  }
+  seat.isSelected = !seat.isSelected;
+  seat.color = seat.isSelected ? 'red' : getColorByPrice(seat.price);
+
+  if (seat.isSelected) {
+    selectedSeats.value.push(seat);
+  } else {
+    selectedSeats.value = selectedSeats.value.filter(selectedSeat => selectedSeat.id !== seat.id);
+  }
+
+  drawVenues();
+};
+
+// Define color by price
+const getColorByPrice = (price: number): string => {
+  switch (price) {
+    case 100: return '#008000';
+    case 150: return '#0000FF';
+    case 200: return '#808080';
+    default: return '#008000';
+  }
+};
 </script>
 
 <style scoped>
@@ -136,6 +272,7 @@ const drawVenues = () => {
   overflow-y: auto;
   overflow-x: hidden;
 }
+
 .venue-canvas {
   display: block;
   height: auto;

@@ -8,4 +8,5 @@ export interface ISeat {
     isSelected: boolean;
     color: string;
     isDeleted: boolean;
+    isReserved:boolean;
 }
