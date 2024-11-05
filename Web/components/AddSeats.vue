@@ -370,7 +370,7 @@ const ClearForm = () => {
 
     <div class="mt-3">
         <input type="checkbox" class="form-check-input me-2" v-model="selectAll" @change="toggleAllSeats" />
-        <label class="form-label">Select All Seats</label>
+        <label class="form-label text-light">Select All Seats</label>
     </div>
     <div class="mt-3">
         <button type="button" @click="saveUpdatedSection(sectionId)" class="btn btn-success" v-if="showEditForm">Update
@@ -383,27 +383,39 @@ const ClearForm = () => {
     </div>
 
     <div class="mt-5">
-        <h2 class="mb-4">Section List</h2>
-        <table class="table table-striped w-100">
-            <tr>
-                <th>Name</th>
-                <th>Rows</th>
-                <th>Columns</th>
-                <th>Actions</th>
-            </tr>
-            <tr v-for="item in getallseats.sections">
-                <td>{{ item.name }}</td>
-                <td>{{ item.rowsCount }}</td>
-                <td>{{ item.columnsCount }}</td>
-                <td>
-                    <div>
-                        <button @click="EditSeats(item)" class="btn btn-success me-2">Edit</button>
-                        <button @click="openConfirmationModal(item.id)" class="btn btn-danger">Delete</button>
-                    </div>
-                </td>
-            </tr>
-        </table>
+        <h2 class="mb-4 text-center text-light">Section List</h2>
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover text-center w-100">
+                <thead>
+                    <tr>
+                        <th style="color: #f8f9fa;">Name</th>
+                        <th style="color: #f8f9fa;">Rows</th>
+                        <th style="color: #f8f9fa;">Columns</th>
+                        <th style="color: #f8f9fa;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in getallseats.sections" :key="item.id">
+                        <td style="color: #ffffff;">{{ item.name }}</td>
+                        <td style="color: #ffffff;">{{ item.rowsCount }}</td>
+                        <td style="color: #ffffff;">{{ item.columnsCount }}</td>
+                        <td>
+                            <div>
+                                <button @click="EditSeats(item)" class="btn btn-success me-2">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button @click="openConfirmationModal(item.id)" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
     </div>
+    
 
     <div v-if="showConfirmationModal" class="modal-overlay" @click.self="closeConfirmationModal">
         <div class="modal-content">

@@ -20,7 +20,7 @@ const route = useRoute();
             to="/AddSeats" 
             :class="{'nav-link text-white': true, 'active text-white': route.path === '/AddSeats'}" 
             aria-current="page">
-            Add Section
+            Sections
           </nuxt-link>
         </li>
         <li>
@@ -37,6 +37,14 @@ const route = useRoute();
             :class="{'nav-link text-white': true, 'active': route?.path === '/AllVenues'}" 
             aria-current="page">
             All Venues
+          </nuxt-link>
+        </li>
+        <li>
+          <nuxt-link 
+            to="/Client/client" 
+            :class="{'nav-link text-white': true, 'active': route?.path === '/Client/client'}" 
+            aria-current="page">
+            Client Side
           </nuxt-link>
         </li>
       </ul>

@@ -96,14 +96,14 @@ const renderCanvas = () => {
     if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Set the background color of the canvas
+            ctx.fillStyle = '#374151'; // Set background color
+            ctx.fillRect(0, 0, canvas.width, canvas.height); // Fill the entire canvas
 
             sectionPositions.value.forEach((canvasProps, index) => {
                 const section = selectedSections.value[index];
-
-                ctx.fillStyle = 'lightblue';
-                ctx.fillRect(canvasProps.x, canvasProps.y, canvasProps.width, canvasProps.height);
-                ctx.strokeStyle = 'black';
+                
+                ctx.strokeStyle = 'white';
                 ctx.strokeRect(canvasProps.x, canvasProps.y, canvasProps.width, canvasProps.height);
 
                 section.seats.forEach((seat: ISeat) => {
@@ -117,6 +117,7 @@ const renderCanvas = () => {
         }
     }
 };
+
 
 const startDragging = (event: MouseEvent) => {
     const { offsetX, offsetY } = event;
@@ -206,7 +207,7 @@ const clearCanvas = () => {
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Venue Name</label>
+            <label class="form-label text-light">Venue Name</label>
             <input type="text" v-model="saveVenueStore.venueName" placeholder="Enter Venue Name" class="form-control w-25"
                 required />
         </div>

@@ -1,9 +1,9 @@
 <template>
   <div>
-    <div v-if="venues.length == 0" class="d-flex justify-content-center mt-5">
+    <div v-if="venues.length == 0" class="d-flex justify-content-center mt-5 text-light">
       <h2>Nothing To Show</h2>
     </div>
-    <div v-if="venues.length !=0">
+    <div v-if="venues.length != 0">
       <button @click="zoom(true)" class="btn btn-secondary m-3 btn-lg ">Zoom In</button>
       <button class="btn btn-secondary m-3 btn-lg " @click="zoom(false)">Zoom Out</button>
     </div>
@@ -20,7 +20,6 @@
       </div>
     </div>
 
-    <!-- Edit Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content">
         <h3>Edit Venue</h3>
@@ -186,13 +185,13 @@ const drawVenues = async (scaleFactor = 1) => {
         canvas.width = canvas.width;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'lightgrey';
+        ctx.fillStyle = '#374151';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.save();
         ctx.scale(scaleFactor, scaleFactor);
 
-        ctx.fillStyle = 'black';
+        ctx.fillStyle = 'white';
         ctx.font = '24px Arial';
         ctx.fillText(
           venue.name,
@@ -209,8 +208,10 @@ const drawVenues = async (scaleFactor = 1) => {
           const posX = section.x * scaleFactor;
           const posY = section.y * scaleFactor;
 
-          ctx.strokeStyle = 'black';
+          ctx.strokeStyle = 'white';
           ctx.strokeRect(posX, posY, sectionWidth, sectionHeight);
+          ctx.fillStyle = '#4b5563'; 
+          ctx.fillRect(section.x, section.y, sectionWidth, sectionHeight);
 
           // Track section positions without duplicates
           if (!sectionPositions.value.some(pos => pos.sectionId === section.id)) {
@@ -233,7 +234,7 @@ const drawVenues = async (scaleFactor = 1) => {
               0,
               Math.PI * 2
             );
-            ctx.fillStyle = seat.isReserved ? 'yellow' : seat.color;
+            ctx.fillStyle = seat.isReserved ? '#F2C010' : seat.color;
             ctx.fill();
             ctx.closePath();
           });
@@ -255,7 +256,7 @@ const drawSectionsOnCanvas = async (selectedSectionIds: number[]) => {
 };
 
 const initializeCanvasPositions = (sectionsToDraw: ISection[], canvasWidth = 1000) => {
-  const offsetX = 20; 
+  const offsetX = 20;
   const offsetY = 50;
   let currentX = offsetX;
   let currentY = offsetY;
@@ -264,11 +265,9 @@ const initializeCanvasPositions = (sectionsToDraw: ISection[], canvasWidth = 100
     const maxX = Math.max(...section.seats.map(seat => seat.x));
     const maxY = Math.max(...section.seats.map(seat => seat.y));
     const sectionWidth = maxX + 2 * (section.seats[0]?.radius || 10) + 20;
-    const sectionHeight = maxY + 2 * (section.seats[0]?.radius || 10) + 20; 
+    const sectionHeight = maxY + 2 * (section.seats[0]?.radius || 10) + 20;
 
-    // Check if adding this section would exceed the canvas width
     if (currentX + sectionWidth > canvasWidth) {
-      // Move to the next row
       currentX = offsetX;
       currentY += sectionHeight + offsetY;
     }
@@ -366,32 +365,34 @@ const renderCanvas = (venueId: number) => {
   if (canvas) {
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = 'lightgrey';
+      ctx.fillStyle = '#374151';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = 'black';
+      ctx.fillStyle = 'white';
       ctx.font = '24px Arial';
       sectionPositions.value.forEach((canvasProps) => {
-        
-        ctx.strokeStyle = 'black';
+
+        ctx.strokeStyle = 'white';
         ctx.strokeRect(canvasProps.x, canvasProps.y, canvasProps.width, canvasProps.height);
 
         const section = allSections.value.find(sec => sec.id === canvasProps.sectionId);
         if (section) {
+          ctx.fillStyle = '#4b5563'; 
+          ctx.fillRect(canvasProps.x, canvasProps.y, canvasProps.width, canvasProps.height);
           section.seats.forEach((seat) => {
-            
+
             ctx.beginPath();
             ctx.arc(
-              canvasProps.x + seat.x,   
+              canvasProps.x + seat.x,
               canvasProps.y + seat.y,
               seat.radius,
               0,
               Math.PI * 2
             );
-            ctx.fillStyle = seat.isReserved ? 'yellow' : seat.color;
+            ctx.fillStyle = seat.isReserved ? '#F2C010' : seat.color;
             ctx.fill();
             ctx.closePath();
           });
