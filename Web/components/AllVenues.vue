@@ -315,6 +315,8 @@ const startDragging = (event: MouseEvent, venueId: number) => {
       offset.x = offsetX - canvasProps.x;
       offset.y = offsetY - canvasProps.y;
     }
+    console.log("Dragging Index",draggingIndex.value);
+    console.log("Drag Venue Id",dragVenueId.value);
   });
 };
 

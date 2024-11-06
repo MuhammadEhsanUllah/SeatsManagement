@@ -15,7 +15,7 @@
     </div>
     <div class="color-indicator">
       <span class="color-box bg-warning"></span>
-      <label class="fw-bold">Reserved</label>
+      <label class="fw-bold">Non-Selectable Or Reserved</label>
     </div>
   </div>
 
@@ -32,17 +32,23 @@
         </div>
       </div>
       <div class="col-3">
-        <div class="text-white">
+        <div class="text-white p-3"  style="background-color: #1e2a38; border-radius: 8px;">
+          <h6 class="text-uppercase text-center mb-3">Selected Seats</h6>
+          <hr />
           <ul>
             <li v-for="(selectedSeat, index) in renderSelectedSeats()" :key="selectedSeat.seat.id" class="mb-2">
               Seat {{ selectedSeat.number }} - Price: ${{ selectedSeat.seat.price }}
-              <button @click="removeSeat(selectedSeat.seat)">Remove</button>
+              <!-- <button @click="removeSeat(selectedSeat.seat)">Remove</button> -->
+              <button type="button" class="btn-close ms-2 my-1 bg-white" @click="removeSeat(selectedSeat.seat)"></button>
+              <hr />
             </li>
-            <h5 v-if="selectedSeats.length > 0">Total Sum: ${{ totalSum }}</h5>
+            <h6 v-if="selectedSeats.length > 0">Total Sum: ${{ totalSum }}</h6>
           </ul>
-          <button v-if="selectedSeats.length > 0" @click="sendReservedSeats" class="reserve-button">
-            Reserve Seats
-          </button>
+          <div class="text-center mt-3">
+            <button v-if="selectedSeats.length > 0" @click="sendReservedSeats" class="btn btn-success w-100">
+              Reserve Seats
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -71,36 +77,35 @@ const totalSum = computed(() => {
 });
 
 // Function to handle seat click
-const handleSeatClick = (seat: ISeat) => {
-  seat.isSelected = !seat.isSelected; // Toggle selection state
+// const handleSeatClick = (seat: ISeat) => {
+//   seat.isSelected = !seat.isSelected; 
 
-  if (seat.isSelected) {
-    selectedSeats.value.push(seat); // Push the entire seat object
-  } else {
-    removeSeat(seat); // Call the remove function
-  }
+//   if (seat.isSelected) {
+//     selectedSeats.value.push(seat); 
+//   } else {
+//     removeSeat(seat); 
+//   }
 
-  console.log("Selected Seats", selectedSeats.value); // Log selected seats for debugging
-  drawVenues(); // Redraw the canvas to reflect seat selection state
-};
+//   console.log("Selected Seats", selectedSeats.value); // Log selected seats for debugging
+//   drawVenues(); // Redraw the canvas to reflect seat selection state
+// };
 
 // Function to remove a seat
 const removeSeat = (seat: ISeat) => {
-  
+
   selectedSeats.value = selectedSeats.value.filter(selectedSeat => selectedSeat.id !== seat.id);
 
   seat.isSelected = false;
-  seat.color = getColorByPrice(seat.price); 
-  
+  seat.color = getColorByPrice(seat.price);
+
   drawVenues();
 
   console.log("Selected Seats after removal", selectedSeats.value);
 };
 
-// Render selected seats with sequential numbering
 const renderSelectedSeats = () => {
   return selectedSeats.value.map((seat, index) => ({
-    number: index + 1, // Sequential numbering starting from 1
+    number: index + 1,
     seat,
   }));
 };
@@ -184,17 +189,26 @@ const drawVenues = () => {
 // Helper function to get click position relative to the canvas
 const getClickPosition = (event: MouseEvent, canvas: HTMLCanvasElement) => {
   const rect = canvas.getBoundingClientRect();
-  const clickX = event.clientX - rect.left;
-  const clickY = event.clientY - rect.top;
+
+  // Account for device pixel ratio and scaling
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  // Calculate adjusted click positions
+  const clickX = (event.clientX - rect.left) * scaleX;
+  const clickY = (event.clientY - rect.top) * scaleY;
+
   return { clickX, clickY };
 };
 
+
 // Main canvas click handler
+// Main canvas click handler with corrected seat selection logic
 const handleMainCanvasClick = (event: MouseEvent, venue: IVenueSection) => {
   const canvas = event.currentTarget as HTMLCanvasElement;
   const { clickX, clickY } = getClickPosition(event, canvas);
 
-  // Find the section that was clicked based on bounding box and seat layout
+  // Loop through sections to find the clicked section and seat
   const clickedSection = venue.sections.find(
     (section) =>
       clickX >= section.x &&
@@ -204,61 +218,71 @@ const handleMainCanvasClick = (event: MouseEvent, venue: IVenueSection) => {
   );
 
   if (clickedSection) {
-    const clickedSeatId = getSeatIdFromClick(clickX, clickY, clickedSection);
-    if (clickedSeatId !== undefined) {
-      const clickedSeat = clickedSection.seats.find(seat => seat.id === clickedSeatId);
-      if (clickedSeat) {
-        toggleSeatSelection(clickedSeat); // Toggle the selection state of the clicked seat
-      }
+    // Find the seat within this section using improved seat matching
+    const clickedSeat = clickedSection.seats.find((seat) => {
+      const seatX = clickedSection.x + seat.x;
+      const seatY = clickedSection.y + seat.y;
+      const distance = Math.sqrt((clickX - seatX) ** 2 + (clickY - seatY) ** 2);
+      return distance <= seat.radius; // Ensures only the clicked seat is selected
+    });
+
+    // Toggle selection if seat is found
+    if (clickedSeat) {
+      toggleSeatSelection(clickedSeat);
     }
   }
 };
 
-// Handle click within a specific section
-const handleSectionClick = (section: IVenueSection['sections'][number], clickX: number, clickY: number) => {
-  section.seats.forEach((seat) => {
-    const seatX = section.x + seat.x;
-    const seatY = section.y + seat.y;
-    const distance = Math.sqrt((clickX - seatX) ** 2 + (clickY - seatY) ** 2);
 
-    if (distance <= seat.radius) {
-      toggleSeatSelection(seat);
-    }
-  });
-};
+// const handleSectionClick = (section: IVenueSection['sections'][number], clickX: number, clickY: number) => {
+//   section.seats.forEach((seat) => {
+//     const seatX = section.x + seat.x;
+//     const seatY = section.y + seat.y;
+//     const distance = Math.sqrt((clickX - seatX) ** 2 + (clickY - seatY) ** 2);
+
+//     if (distance <= seat.radius) {
+//       toggleSeatSelection(seat);
+//     }
+//   });
+// };
 
 // Toggle seat selection and update color
 const toggleSeatSelection = (seat: ISeat) => {
-  if (seat.isReserved) return; // Prevent selection of reserved seats
+  if (seat.isReserved) return;
 
-  // Toggle selection and update color
   seat.isSelected = !seat.isSelected;
   seat.color = seat.isSelected ? 'red' : getColorByPrice(seat.price);
 
-  // Update selected seats list
   if (seat.isSelected) {
     selectedSeats.value.push(seat);
   } else {
     selectedSeats.value = selectedSeats.value.filter(selectedSeat => selectedSeat.id !== seat.id);
   }
 
-  drawVenues(); // Re-render the venue to reflect changes
+  drawVenues();
 };
-const getSeatIdFromClick = (clickX: number, clickY: number, section: IVenueSection['sections'][number]): number | undefined => {
-  return section.seats.find(seat => {
-    // Calculate the absolute seat coordinates within the section
-    const seatX = section.x + seat.x;
-    const seatY = section.y + seat.y;
-    const distance = Math.sqrt((clickX - seatX) ** 2 + (clickY - seatY) ** 2);
-    return distance <= seat.radius; // Return the seat if within the click radius
-  })?.id;
-};
-// Define color by price
-const getColorByPrice = (price: number): string => {
+
+// const getSeatIdFromClick = (clickX: number, clickY: number, section: IVenueSection['sections'][number]): number | undefined => {
+//   return section.seats.find(seat => {
+//     // Calculate the absolute seat coordinates within the section
+//     const seatX = section.x + seat.x;
+//     const seatY = section.y + seat.y;
+//     const distance = Math.sqrt((clickX - seatX) ** 2 + (clickY - seatY) ** 2);
+//     return distance <= seat.radius; 
+//   })?.id;
+// };
+
+const getColorByPrice = (price: any) => {
   switch (price) {
-    case 100: return '#008000';
-    case 150: return '#0000FF';
-    case 200: return '#808080';
+    case "100":
+    case 100:
+      return '#008000';
+    case 150:
+    case "150":
+      return '#0000FF';
+    case 200:
+    case "200":
+      return '#808080';
     default: return '#008000';
   }
 };
@@ -275,7 +299,7 @@ const getColorByPrice = (price: number): string => {
   height: 20px;
   margin-right: 8px;
   border: 1px solid #ccc;
-  border-radius: 2px;
+  border-radius: 20px;
 }
 
 .venue-container {
