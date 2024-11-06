@@ -1,6 +1,6 @@
 <template>
   <div class="text-white">
-    <!-- Color Indicators for Seat Pricing -->
+    
     <div class="color-indicator">
       <span class="color-box bg-success"></span>
       <label class="fw-bold">$100 Price</label>
@@ -19,7 +19,6 @@
     </div>
   </div>
 
-  <!-- Venue Canvases Layout -->
   <div class="container-fluid">
     <div class="row">
       <div class="col-9">
@@ -38,7 +37,7 @@
           <ul>
             <li v-for="(selectedSeat, index) in renderSelectedSeats()" :key="selectedSeat.seat.id" class="mb-2">
               Seat {{ selectedSeat.number }} - Price: ${{ selectedSeat.seat.price }}
-              <!-- <button @click="removeSeat(selectedSeat.seat)">Remove</button> -->
+              
               <button type="button" class="btn-close ms-2 my-1 bg-white" @click="removeSeat(selectedSeat.seat)"></button>
               <hr />
             </li>
@@ -76,21 +75,6 @@ const totalSum = computed(() => {
   return selectedSeats.value.reduce((sum, seat) => sum + Number(seat.price), 0);
 });
 
-// Function to handle seat click
-// const handleSeatClick = (seat: ISeat) => {
-//   seat.isSelected = !seat.isSelected; 
-
-//   if (seat.isSelected) {
-//     selectedSeats.value.push(seat); 
-//   } else {
-//     removeSeat(seat); 
-//   }
-
-//   console.log("Selected Seats", selectedSeats.value); // Log selected seats for debugging
-//   drawVenues(); // Redraw the canvas to reflect seat selection state
-// };
-
-// Function to remove a seat
 const removeSeat = (seat: ISeat) => {
 
   selectedSeats.value = selectedSeats.value.filter(selectedSeat => selectedSeat.id !== seat.id);
@@ -186,15 +170,11 @@ const drawVenues = () => {
   });
 };
 
-// Helper function to get click position relative to the canvas
 const getClickPosition = (event: MouseEvent, canvas: HTMLCanvasElement) => {
   const rect = canvas.getBoundingClientRect();
 
-  // Account for device pixel ratio and scaling
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
-
-  // Calculate adjusted click positions
   const clickX = (event.clientX - rect.left) * scaleX;
   const clickY = (event.clientY - rect.top) * scaleY;
 
@@ -203,12 +183,10 @@ const getClickPosition = (event: MouseEvent, canvas: HTMLCanvasElement) => {
 
 
 // Main canvas click handler
-// Main canvas click handler with corrected seat selection logic
 const handleMainCanvasClick = (event: MouseEvent, venue: IVenueSection) => {
   const canvas = event.currentTarget as HTMLCanvasElement;
   const { clickX, clickY } = getClickPosition(event, canvas);
 
-  // Loop through sections to find the clicked section and seat
   const clickedSection = venue.sections.find(
     (section) =>
       clickX >= section.x &&
@@ -218,33 +196,18 @@ const handleMainCanvasClick = (event: MouseEvent, venue: IVenueSection) => {
   );
 
   if (clickedSection) {
-    // Find the seat within this section using improved seat matching
     const clickedSeat = clickedSection.seats.find((seat) => {
       const seatX = clickedSection.x + seat.x;
       const seatY = clickedSection.y + seat.y;
       const distance = Math.sqrt((clickX - seatX) ** 2 + (clickY - seatY) ** 2);
-      return distance <= seat.radius; // Ensures only the clicked seat is selected
+      return distance <= seat.radius;
     });
 
-    // Toggle selection if seat is found
     if (clickedSeat) {
       toggleSeatSelection(clickedSeat);
     }
   }
 };
-
-
-// const handleSectionClick = (section: IVenueSection['sections'][number], clickX: number, clickY: number) => {
-//   section.seats.forEach((seat) => {
-//     const seatX = section.x + seat.x;
-//     const seatY = section.y + seat.y;
-//     const distance = Math.sqrt((clickX - seatX) ** 2 + (clickY - seatY) ** 2);
-
-//     if (distance <= seat.radius) {
-//       toggleSeatSelection(seat);
-//     }
-//   });
-// };
 
 // Toggle seat selection and update color
 const toggleSeatSelection = (seat: ISeat) => {
@@ -261,16 +224,6 @@ const toggleSeatSelection = (seat: ISeat) => {
 
   drawVenues();
 };
-
-// const getSeatIdFromClick = (clickX: number, clickY: number, section: IVenueSection['sections'][number]): number | undefined => {
-//   return section.seats.find(seat => {
-//     // Calculate the absolute seat coordinates within the section
-//     const seatX = section.x + seat.x;
-//     const seatY = section.y + seat.y;
-//     const distance = Math.sqrt((clickX - seatX) ** 2 + (clickY - seatY) ** 2);
-//     return distance <= seat.radius; 
-//   })?.id;
-// };
 
 const getColorByPrice = (price: any) => {
   switch (price) {

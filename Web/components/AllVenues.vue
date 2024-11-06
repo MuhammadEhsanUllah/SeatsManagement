@@ -74,6 +74,7 @@ const editableVenue = ref<IVenueSection>({ id: 0, name: '', sections: [] });
 const selectedSections = ref<number[]>([]);
 const venueToDelete = ref<number | null>(null);
 const sectionPositions = ref<ISectionPosition[]>([]);
+const venueSectionPositions = ref<Record<number, ISectionPosition[]>>({});
 const venuename = ref<String>("");
 let zoomer = 1;
 //drag
@@ -321,15 +322,16 @@ const startDragging = (event: MouseEvent, venueId: number) => {
 };
 
 const drag = async (event: MouseEvent) => {
-  if (!isDragging.value || draggingIndex.value === -1 || dragVenueId.value === null) return;
+  if (!isDragging.value || draggingIndex.value === -1 || dragVenueId.value === 0) return;
 
   const { offsetX, offsetY } = event;
   const positions = sectionPositions.value;
+
   const canvasProps = positions[draggingIndex.value];
+  if (!canvasProps || venues.value.find(v => v.id === dragVenueId.value)?.sections.every(s => s.id !== canvasProps.sectionId)) return;
 
   canvasProps.x = offsetX - offset.x;
   canvasProps.y = offsetY - offset.y;
-  console.log(positions);
 
   const updatePayload: IUpdateSectionPosition = {
     sectionId: canvasProps.sectionId,
@@ -339,12 +341,10 @@ const drag = async (event: MouseEvent) => {
   };
 
   await updateSectionPosition(updatePayload);
-  console.log(canvasProps.sectionId, dragVenueId.value);
 
-  seatingStore.getVenues();
-  venues.value = seatingStore.venues;
   renderCanvas(dragVenueId.value);
 };
+
 
 const updateSectionPosition = async (updateData: IUpdateSectionPosition) => {
   try {
@@ -367,25 +367,28 @@ const renderCanvas = (venueId: number) => {
   if (canvas) {
     const ctx = canvas.getContext('2d');
     if (ctx) {
-
+      // Clear the canvas before redrawing
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       ctx.fillStyle = '#374151';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.fillStyle = 'white';
       ctx.font = '24px Arial';
-      sectionPositions.value.forEach((canvasProps) => {
 
+      const venueSections = sectionPositions.value.filter(
+        (pos) => venues.value.some(v => v.id === venueId && v.sections.some(s => s.id === pos.sectionId))
+      );
+
+      venueSections.forEach((canvasProps) => {
         ctx.strokeStyle = 'white';
         ctx.strokeRect(canvasProps.x, canvasProps.y, canvasProps.width, canvasProps.height);
 
         const section = allSections.value.find(sec => sec.id === canvasProps.sectionId);
         if (section) {
-          ctx.fillStyle = '#4b5563'; 
+          ctx.fillStyle = '#4b5563';
           ctx.fillRect(canvasProps.x, canvasProps.y, canvasProps.width, canvasProps.height);
-          section.seats.forEach((seat) => {
 
+          section.seats.forEach((seat) => {
             ctx.beginPath();
             ctx.arc(
               canvasProps.x + seat.x,
@@ -403,6 +406,7 @@ const renderCanvas = (venueId: number) => {
     }
   }
 };
+
 
 
 </script>
